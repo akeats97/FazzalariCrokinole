@@ -102,7 +102,7 @@ export default function CupHistory({ go }) {
                     <img
                       src={entry.imageUrl}
                       alt={`${Array.isArray(entry.winners) ? entry.winners.join(' & ') : entry.winners} champions`}
-                      className="w-full object-cover max-h-52"
+                      className="w-full h-auto"
                     />
                   )}
 
