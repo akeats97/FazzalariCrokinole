@@ -91,36 +91,44 @@ export default function CupHistory({ go }) {
               return (
                 <div
                   key={entry.id}
-                  className={`flex items-center gap-4 rounded border px-4 py-4 border-l-4 ${
+                  className={`rounded border border-l-4 overflow-hidden ${
                     isLatest
                       ? 'bg-gold/10 border-gold/20 border-l-gold'
                       : 'bg-cream-card border-ink/10 border-l-forest/30'
                   }`}
                 >
-                  {/* Medal */}
-                  <div className="shrink-0 w-9 text-center">
-                    <span className="text-2xl leading-none">{medalEmoji}</span>
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className={`font-headline font-bold text-lg leading-tight truncate ${
-                        isLatest ? 'text-ink' : 'text-ink'
-                      }`}
-                    >
-                      {Array.isArray(entry.winners)
-                        ? entry.winners.join(' & ')
-                        : entry.winners ?? '?'}
-                    </p>
-                    <p className="font-sans text-xs text-ink-muted mt-0.5">{dateStr}</p>
-                  </div>
-
-                  {isLatest && (
-                    <span className="font-sans text-xs font-bold uppercase tracking-wider text-gold-dark bg-gold/20 border border-gold/30 rounded-full px-2 py-1 shrink-0">
-                      Reigning
-                    </span>
+                  {/* Champion photo */}
+                  {entry.imageUrl && (
+                    <img
+                      src={entry.imageUrl}
+                      alt={`${Array.isArray(entry.winners) ? entry.winners.join(' & ') : entry.winners} champions`}
+                      className="w-full object-cover max-h-52"
+                    />
                   )}
+
+                  {/* Info row */}
+                  <div className="flex items-center gap-4 px-4 py-4">
+                    {/* Medal */}
+                    <div className="shrink-0 w-9 text-center">
+                      <span className="text-2xl leading-none">{medalEmoji}</span>
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-headline font-bold text-lg leading-tight truncate text-ink">
+                        {Array.isArray(entry.winners)
+                          ? entry.winners.join(' & ')
+                          : entry.winners ?? '?'}
+                      </p>
+                      <p className="font-sans text-xs text-ink-muted mt-0.5">{dateStr}</p>
+                    </div>
+
+                    {isLatest && (
+                      <span className="font-sans text-xs font-bold uppercase tracking-wider text-gold-dark bg-gold/20 border border-gold/30 rounded-full px-2 py-1 shrink-0">
+                        Reigning
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}
