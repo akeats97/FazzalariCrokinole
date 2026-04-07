@@ -17,6 +17,9 @@
  *   node scripts/manage-history.mjs set-date --doc "abc123" --date "2024-03-31"
  *     → Update the date on an existing entry.
  *
+ *   node scripts/manage-history.mjs set-winners --doc "abc123" --winners "Chris"
+ *     → Update the winners list on an existing entry.
+ *
  * After any change: git add -A && git commit -m "..." && git push
  * Vercel will deploy the updated public/champions/ images automatically.
  */
@@ -143,6 +146,21 @@ async function setDate() {
   console.log(`✓ Updated ${docId} → date set to ${dateArg}`);
 }
 
+async function setWinners() {
+  const docId = getArg('doc');
+  const winnersArg = getArg('winners');
+
+  if (!docId || !winnersArg) {
+    console.error('Usage: set-winners --doc "<firestore-doc-id>" --winners "Name1,Name2"');
+    console.error('Run "list" first to find doc IDs.');
+    process.exit(1);
+  }
+
+  const winners = winnersArg.split(',').map((s) => s.trim());
+  await updateDoc(doc(db, 'cupHistory', docId), { winners });
+  console.log(`✓ Updated ${docId} → winners set to ${winners.join(' & ')}`);
+}
+
 // --- Router ---
 
 if (command === 'list') {
@@ -153,6 +171,8 @@ if (command === 'list') {
   await attachImage();
 } else if (command === 'set-date') {
   await setDate();
+} else if (command === 'set-winners') {
+  await setWinners();
 } else {
   console.error('Unknown command. Use: list | add | attach-image');
   console.error('Run with no args or see top of file for full usage.');
