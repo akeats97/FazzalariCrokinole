@@ -14,6 +14,9 @@
  *     → Set or update the imageUrl on an existing entry.
  *       Copy the image to public/champions/ before running this.
  *
+ *   node scripts/manage-history.mjs set-date --doc "abc123" --date "2024-03-31"
+ *     → Update the date on an existing entry.
+ *
  * After any change: git add -A && git commit -m "..." && git push
  * Vercel will deploy the updated public/champions/ images automatically.
  */
@@ -120,6 +123,26 @@ async function attachImage() {
   console.log(`✓ Updated ${docId} → imageUrl set to ${imageUrl}`);
 }
 
+async function setDate() {
+  const docId = getArg('doc');
+  const dateArg = getArg('date');
+
+  if (!docId || !dateArg) {
+    console.error('Usage: set-date --doc "<firestore-doc-id>" --date "YYYY-MM-DD"');
+    console.error('Run "list" first to find doc IDs.');
+    process.exit(1);
+  }
+
+  const date = new Date(`${dateArg}T12:00:00`);
+  if (isNaN(date)) {
+    console.error(`Invalid date: ${dateArg}. Use YYYY-MM-DD format.`);
+    process.exit(1);
+  }
+
+  await updateDoc(doc(db, 'cupHistory', docId), { date: Timestamp.fromDate(date) });
+  console.log(`✓ Updated ${docId} → date set to ${dateArg}`);
+}
+
 // --- Router ---
 
 if (command === 'list') {
@@ -128,6 +151,8 @@ if (command === 'list') {
   await add();
 } else if (command === 'attach-image') {
   await attachImage();
+} else if (command === 'set-date') {
+  await setDate();
 } else {
   console.error('Unknown command. Use: list | add | attach-image');
   console.error('Run with no args or see top of file for full usage.');
