@@ -171,14 +171,29 @@ Best-of-3. Tracked as 3 individual games on `bracket.final.games`. First to 2 wi
 
 Each `cupHistory` document has an optional `imageUrl` field. Photos are stored as static files in `public/champions/` and served by Vercel's CDN — no Firebase Storage is used.
 
-### Adding a new photo (manual process)
+### Managing cup history entries
 
-1. Copy the image file into `public/champions/`
-2. Add a line to `scripts/upload-images.mjs` with the Firestore doc ID and the path `/champions/<filename>`
-3. Run `node scripts/upload-images.mjs` to update Firestore
-4. Commit and push — Vercel will deploy the new image automatically
+Use `scripts/manage-history.mjs` for all cup history operations.
 
-To find a doc ID: open the Firebase Console → Firestore → `cupHistory` collection.
+```bash
+# List all entries with their Firestore doc IDs
+node scripts/manage-history.mjs list
+
+# Add a new entry (copy image to public/champions/ first)
+node scripts/manage-history.mjs add --winners "Name1,Name2" --date "YYYY-MM-DD" --image "filename.jpg"
+
+# Attach or update an image on an existing entry (run list first to get the doc ID)
+node scripts/manage-history.mjs attach-image --doc "<firestore-doc-id>" --image "filename.jpg"
+```
+
+After any change: commit and push — Vercel will deploy the updated images automatically.
+
+**Typical post-tournament workflow:**
+1. The app automatically creates the `cupHistory` entry when a winner is crowned
+2. Copy the photo into `public/champions/`
+3. Run `list` to find the doc ID of the new entry
+4. Run `attach-image` to link the photo
+5. Commit and push
 
 ### Future improvement
 An in-app photo upload feature was intentionally deferred. The intended approach would use Firebase Storage, but note: the Firebase project's default GCP region is **northamerica-northeast1 (Toronto)**, which is not a no-cost Storage region on the Spark plan. Options when the time comes:
