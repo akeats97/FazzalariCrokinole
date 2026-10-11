@@ -101,7 +101,7 @@ function CrownedScreen({ champName, go }) {
           </div>
 
           <p className="font-sans text-sm text-ink-muted max-w-xs">
-            The result has been recorded in the Fazzalari Cup History.
+            The result has been recorded in the Fazzalari Cup History. Add a champion photo there.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { subscribeCupHistory } from '../firebase/db';
 import Tricolore from './Tricolore';
+import { CupPhotoImage, CupPhotoControls } from './CupPhoto';
 
 export default function CupHistory({ go }) {
   const [history, setHistory] = useState(null);
@@ -98,13 +99,10 @@ export default function CupHistory({ go }) {
                   }`}
                 >
                   {/* Champion photo */}
-                  {entry.imageUrl && (
-                    <img
-                      src={entry.imageUrl}
-                      alt={`${Array.isArray(entry.winners) ? entry.winners.join(' & ') : entry.winners} champions`}
-                      className="w-full h-auto"
-                    />
-                  )}
+                  <CupPhotoImage
+                    entry={entry}
+                    alt={`${Array.isArray(entry.winners) ? entry.winners.join(' & ') : entry.winners} champions`}
+                  />
 
                   {/* Info row */}
                   <div className="flex items-center gap-4 px-4 py-4">
@@ -129,6 +127,8 @@ export default function CupHistory({ go }) {
                       </span>
                     )}
                   </div>
+
+                  <CupPhotoControls entry={entry} />
                 </div>
               );
             })}

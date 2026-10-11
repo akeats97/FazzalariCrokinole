@@ -241,3 +241,21 @@ export async function deleteTournament(tournamentId) {
     await setDoc(META_REF, { tournamentId: null, pin: null });
   }
 }
+
+// ── CUP PHOTOS ────────────────────────────────────────────────────────────────
+// Stored apart from cupHistory so the home screen's history listener stays small
+
+export async function getCupPhoto(entryId) {
+  const snap = await getDoc(doc(db, 'cupPhotos', entryId));
+  return snap.exists() ? snap.data().dataUrl : null;
+}
+
+export async function setCupPhoto(entryId, dataUrl) {
+  await setDoc(doc(db, 'cupPhotos', entryId), { dataUrl, updatedAt: serverTimestamp() });
+  await updateDoc(doc(db, 'cupHistory', entryId), { photoUpdatedAt: serverTimestamp() });
+}
+
+export async function removeCupPhoto(entryId) {
+  await deleteDoc(doc(db, 'cupPhotos', entryId));
+  await updateDoc(doc(db, 'cupHistory', entryId), { photoUpdatedAt: null });
+}
