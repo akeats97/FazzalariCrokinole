@@ -6,10 +6,10 @@ import Tricolore from './Tricolore';
 const MIN_PLAYERS = 8;  // 4 teams of 2
 const MAX_PLAYERS = 16; // 8 teams of 2
 
-export default function CreateTournament({ go }) {
+export default function CreateTournament({ go, initialPlayers = [] }) {
   const [phase, setPhase] = useState('names');
   const [nameInput, setNameInput] = useState('');
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState(initialPlayers);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

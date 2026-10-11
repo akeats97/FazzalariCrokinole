@@ -5,6 +5,7 @@ import Standings from './Standings';
 import PlayoffBracket from './PlayoffBracket';
 import WinnerScreen from './WinnerScreen';
 import Tricolore from './Tricolore';
+import ManageTournament from './ManageTournament';
 
 const TABS = {
   roundrobin: ['Matches', 'Standings'],
@@ -16,11 +17,16 @@ export default function TournamentView({ tournamentId, pin, go }) {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('Matches');
   const [copied, setCopied] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const prevStatus = useRef(null);
 
   useEffect(() => {
     if (!tournamentId) { setError('No tournament ID.'); return; }
     const unsub = subscribeTournament(tournamentId, (data) => {
+      if (!data) {
+        setError('This tournament was deleted.');
+        return;
+      }
       if (prevStatus.current === 'roundrobin' && data.status === 'playoffs') {
         setTab('Bracket');
       }
@@ -101,10 +107,28 @@ export default function TournamentView({ tournamentId, pin, go }) {
           </span>
         </button>
 
-        <span className={`font-sans text-xs font-bold text-white uppercase tracking-wide rounded-full px-3 py-1 shrink-0 ${statusColor}`}>
-          {statusLabel}
-        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`font-sans text-xs font-bold text-white uppercase tracking-wide rounded-full px-3 py-1 ${statusColor}`}>
+            {statusLabel}
+          </span>
+          <button
+            onClick={() => setShowManage(true)}
+            className="text-xl leading-none text-ink-muted hover:text-ink transition-colors"
+            title="Manage tournament"
+            aria-label="Manage tournament"
+          >
+            ⚙
+          </button>
+        </div>
       </div>
+
+      {showManage && (
+        <ManageTournament
+          tournament={tournament}
+          go={go}
+          onClose={() => setShowManage(false)}
+        />
+      )}
 
       {/* Tabs */}
       {tabs.length > 1 && (

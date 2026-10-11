@@ -4,6 +4,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   addDoc,
   serverTimestamp,
@@ -42,7 +43,7 @@ export async function joinByPin(pin) {
 
 export function subscribeTournament(tournamentId, cb) {
   return onSnapshot(doc(db, 'tournaments', tournamentId), (snap) => {
-    if (snap.exists()) cb({ id: snap.id, ...snap.data() });
+    cb(snap.exists() ? { id: snap.id, ...snap.data() } : null);
   });
 }
 
@@ -202,4 +203,18 @@ export async function crownWinner(tournamentId, winnerTeam) {
     tournamentId,
   });
   await setDoc(META_REF, { tournamentId: null, pin: null });
+}
+
+// ── MANAGE ────────────────────────────────────────────────────────────────────
+
+export async function updateTeamNames(tournamentId, teams) {
+  await updateDoc(doc(db, 'tournaments', tournamentId), { teams });
+}
+
+export async function deleteTournament(tournamentId) {
+  await deleteDoc(doc(db, 'tournaments', tournamentId));
+  const meta = await getDoc(META_REF);
+  if (meta.exists() && meta.data().tournamentId === tournamentId) {
+    await setDoc(META_REF, { tournamentId: null, pin: null });
+  }
 }
