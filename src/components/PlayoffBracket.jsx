@@ -2,6 +2,36 @@ import MatchCard from './MatchCard';
 import { getTeamName } from '../utils/tournamentLogic';
 import { submitBracketScore, submitFinalGame } from '../firebase/db';
 
+// Singular name for one game of each bracket round, e.g. "Quarterfinal 2"
+const GAME_NAMES = {
+  'Play-in': 'Play-in',
+  'First Round': 'First Round Game',
+  Quarterfinals: 'Quarterfinal',
+  Semifinals: 'Semifinal',
+  'Final Four': 'Final Four Game',
+};
+
+function gameLabel(bracket, matchId) {
+  for (const round of bracket.rounds) {
+    const i = round.matches.findIndex((m) => m.id === matchId);
+    if (i !== -1) return `${GAME_NAMES[round.name] ?? round.name} ${i + 1}`;
+  }
+  return matchId;
+}
+
+// Name for an empty bracket slot: the game whose winner fills it
+function feederLabel(bracket, targetId, slot) {
+  for (const round of bracket.rounds) {
+    const feeder = round.matches.find((m) => m.feedsTo === targetId && m.feedsSlot === slot);
+    if (feeder) return `Winner of ${gameLabel(bracket, feeder.id)}`;
+  }
+  return 'TBD';
+}
+
+function slotName(bracket, teams, teamId, targetId, slot) {
+  return teamId ? getTeamName(teams, teamId) : feederLabel(bracket, targetId, slot);
+}
+
 export default function PlayoffBracket({ bracket, teams, tournamentId }) {
   if (!bracket) return null;
 
@@ -11,11 +41,13 @@ export default function PlayoffBracket({ bracket, teams, tournamentId }) {
         <BracketRound
           key={round.name}
           round={round}
+          bracket={bracket}
           teams={teams}
           tournamentId={tournamentId}
         />
       ))}
       <ChampionshipFinal
+        bracket={bracket}
         final={bracket.final}
         teams={teams}
         tournamentId={tournamentId}
@@ -24,7 +56,7 @@ export default function PlayoffBracket({ bracket, teams, tournamentId }) {
   );
 }
 
-function BracketRound({ round, teams, tournamentId }) {
+function BracketRound({ round, bracket, teams, tournamentId }) {
   const allDone = round.matches.every((m) => m.completed);
   return (
     <div>
@@ -43,10 +75,10 @@ function BracketRound({ round, teams, tournamentId }) {
             <MatchCard
               key={match.id}
               match={match}
-              team1Name={getTeamName(teams, match.team1Id)}
-              team2Name={getTeamName(teams, match.team2Id)}
+              team1Name={slotName(bracket, teams, match.team1Id, match.id, 1)}
+              team2Name={slotName(bracket, teams, match.team2Id, match.id, 2)}
               allowTie={false}
-              label={`Match ${i + 1}`}
+              label={gameLabel(bracket, match.id)}
               onSubmit={
                 canPlay
                   ? (s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)
@@ -61,9 +93,9 @@ function BracketRound({ round, teams, tournamentId }) {
   );
 }
 
-function ChampionshipFinal({ final, teams, tournamentId }) {
-  const t1 = getTeamName(teams, final.team1Id);
-  const t2 = getTeamName(teams, final.team2Id);
+function ChampionshipFinal({ bracket, final, teams, tournamentId }) {
+  const t1 = slotName(bracket, teams, final.team1Id, 'final', 1);
+  const t2 = slotName(bracket, teams, final.team2Id, 'final', 2);
   const ready = final.team1Id && final.team2Id;
 
   const showGame3 = final.team1Wins >= 1 && final.team2Wins >= 1;
@@ -89,7 +121,7 @@ function ChampionshipFinal({ final, teams, tournamentId }) {
       {!ready && (
         <div className="bg-cream-card border border-ink/10 rounded px-4 py-6 text-center">
           <p className="font-sans text-ink-muted text-sm">
-            Awaiting finalists from previous rounds…
+            {t1} vs {t2}
           </p>
         </div>
       )}
