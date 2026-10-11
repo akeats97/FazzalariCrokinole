@@ -52,6 +52,7 @@ function BracketRound({ round, teams, tournamentId }) {
                   ? (s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)
                   : undefined
               }
+              onEdit={(s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)}
             />
           );
         })}
@@ -143,6 +144,7 @@ function ChampionshipFinal({ final, teams, tournamentId }) {
                     ? (s1, s2) => submitFinalGame(tournamentId, game.gameNum, s1, s2)
                     : undefined
                 }
+                onEdit={(s1, s2) => submitFinalGame(tournamentId, game.gameNum, s1, s2)}
               />
             );
           })}

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { isHostUnlocked } from '../utils/hostAuth';
+import PasswordPrompt from './PasswordPrompt';
 
 const ARENA_CONFIG = {
   'Cucina Colosseo': {
@@ -24,6 +26,7 @@ export default function MatchCard({
   team1Name,
   team2Name,
   onSubmit,
+  onEdit,
   allowTie = true,
   label,
 }) {
@@ -31,12 +34,32 @@ export default function MatchCard({
   const [s2, setS2] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [askingPassword, setAskingPassword] = useState(false);
 
   const arena = ARENA_CONFIG[match.arena] ?? DEFAULT_ARENA;
   const isTBD = !onSubmit && !match.completed;
-  const isCompleted = match.completed;
+  const isCompleted = match.completed && !editing;
+  const showInputs = !isCompleted && !isTBD;
   const isWinner1 = isCompleted && Number(match.score1) > Number(match.score2);
   const isWinner2 = isCompleted && Number(match.score2) > Number(match.score1);
+
+  function startEdit() {
+    setS1(String(match.score1));
+    setS2(String(match.score2));
+    setErr('');
+    setEditing(true);
+  }
+
+  function handleEditClick() {
+    if (isHostUnlocked()) startEdit();
+    else setAskingPassword(true);
+  }
+
+  function cancelEdit() {
+    setEditing(false);
+    setErr('');
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -53,9 +76,19 @@ export default function MatchCard({
     setErr('');
     setSubmitting(true);
     try {
-      await onSubmit(n1, n2);
-    } catch {
-      setErr('Failed to save. Try again.');
+      if (editing) {
+        await onEdit(n1, n2);
+        setEditing(false);
+        setSubmitting(false);
+      } else {
+        await onSubmit(n1, n2);
+      }
+    } catch (error) {
+      const msgs = {
+        DOWNSTREAM_STARTED: "Can't change the winner: the next game has already been scored.",
+        PLAYOFFS_STARTED: "Round robin scores are locked once a playoff game has been scored.",
+      };
+      setErr(msgs[error.message] ?? 'Failed to save. Try again.');
       setSubmitting(false);
     }
   }
@@ -73,6 +106,15 @@ export default function MatchCard({
         <div className="flex items-center gap-2">
           {label && <span className="font-sans text-xs text-ink-faint">{label}</span>}
           {isCompleted && <span className="font-sans text-xs text-forest font-bold">✓ Final</span>}
+          {isCompleted && onEdit && !askingPassword && (
+            <button
+              onClick={handleEditClick}
+              className="font-sans text-xs font-bold uppercase tracking-wide text-ink-muted hover:text-ink underline underline-offset-2"
+            >
+              Edit
+            </button>
+          )}
+          {editing && <span className="font-sans text-xs text-rosso font-bold uppercase tracking-wide">Editing</span>}
           {isTBD && <span className="font-sans text-xs text-ink-faint italic">Awaiting…</span>}
         </div>
       </div>
@@ -95,7 +137,7 @@ export default function MatchCard({
             <span className={`font-headline text-2xl font-bold tabular-nums shrink-0 ${isWinner1 ? 'text-ink' : 'text-ink-muted'}`}>
               {match.score1}
             </span>
-          ) : !isTBD ? (
+          ) : showInputs ? (
             <input
               type="number"
               inputMode="numeric"
@@ -132,7 +174,7 @@ export default function MatchCard({
             <span className={`font-headline text-2xl font-bold tabular-nums shrink-0 ${isWinner2 ? 'text-ink' : 'text-ink-muted'}`}>
               {match.score2}
             </span>
-          ) : !isTBD ? (
+          ) : showInputs ? (
             <input
               type="number"
               inputMode="numeric"
@@ -147,17 +189,38 @@ export default function MatchCard({
         </div>
       </div>
 
+      {/* Password before editing a final score */}
+      {askingPassword && (
+        <PasswordPrompt
+          compact
+          message="Enter the host password to edit this score."
+          onCancel={() => setAskingPassword(false)}
+          onUnlock={() => { setAskingPassword(false); startEdit(); }}
+        />
+      )}
+
       {/* Submit */}
-      {!isCompleted && !isTBD && (
+      {showInputs && (
         <div className="px-4 pb-4">
           {err && <p className="font-sans text-xs text-rosso mb-2 text-center">{err}</p>}
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !s1 || !s2}
-            className="w-full py-2.5 rounded bg-ink text-cream font-sans font-bold text-sm uppercase tracking-wider hover:bg-ink-light active:bg-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            {submitting ? 'Saving…' : 'Submit Score'}
-          </button>
+          <div className="flex gap-2">
+            {editing && (
+              <button
+                onClick={cancelEdit}
+                disabled={submitting}
+                className="flex-1 py-2.5 rounded border-2 border-ink/15 text-ink-muted font-sans font-bold text-sm uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || !s1 || !s2}
+              className="flex-1 py-2.5 rounded bg-ink text-cream font-sans font-bold text-sm uppercase tracking-wider hover:bg-ink-light active:bg-ink disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              {submitting ? 'Saving…' : editing ? 'Save Score' : 'Submit Score'}
+            </button>
+          </div>
         </div>
       )}
     </div>

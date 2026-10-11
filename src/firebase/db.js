@@ -103,6 +103,7 @@ export async function submitRRScore(tournamentId, roundIdx, matchId, score1, sco
     const ref = doc(db, 'tournaments', tournamentId);
     const snap = await tx.get(ref);
     const data = snap.data();
+    if (playoffsStarted(data.bracket)) throw new Error('PLAYOFFS_STARTED');
 
     const rounds = data.rounds.map((r, ri) =>
       ri !== roundIdx
@@ -118,6 +119,7 @@ export async function submitRRScore(tournamentId, roundIdx, matchId, score1, sco
     const standings = computeStandings(data.teams, rounds);
     const update = { rounds, standings };
 
+    // Re-seed the bracket if a round robin score changes before any playoff game is played
     if (isRoundRobinComplete(rounds)) {
       update.bracket = generateBracket(standings);
       update.status = 'playoffs';
@@ -139,10 +141,13 @@ export async function submitBracketScore(tournamentId, matchId, score1, score2) 
       if (!match) continue;
       found = true;
 
+      const winner = score1 > score2 ? match.team1Id : match.team2Id;
+      if (match.completed && match.winnerId !== winner && nextGameStarted(bracket, match.feedsTo)) {
+        throw new Error('DOWNSTREAM_STARTED');
+      }
       match.score1 = score1;
       match.score2 = score2;
       match.completed = true;
-      const winner = score1 > score2 ? match.team1Id : match.team2Id;
       match.winnerId = winner;
 
       if (match.feedsTo === 'final') {
@@ -183,9 +188,27 @@ export async function submitFinalGame(tournamentId, gameNum, score1, score2) {
     bracket.final.team2Wins = w2;
     if (w1 >= 2) bracket.final.winnerId = bracket.final.team1Id;
     else if (w2 >= 2) bracket.final.winnerId = bracket.final.team2Id;
+    else bracket.final.winnerId = null;
 
     tx.update(ref, { bracket });
   });
+}
+
+function playoffsStarted(bracket) {
+  if (!bracket) return false;
+  return (
+    bracket.rounds.some((r) => r.matches.some((m) => m.completed)) ||
+    bracket.final.games.some((g) => g.completed)
+  );
+}
+
+function nextGameStarted(bracket, feedsTo) {
+  if (feedsTo === 'final') return bracket.final.games.some((g) => g.completed);
+  for (const round of bracket.rounds) {
+    const next = round.matches.find((m) => m.id === feedsTo);
+    if (next) return next.completed;
+  }
+  return false;
 }
 
 // ── COMPLETE ──────────────────────────────────────────────────────────────────

@@ -54,6 +54,9 @@ export default function RoundRobin({ rounds, teams, tournamentId }) {
                   onSubmit={(s1, s2) =>
                     submitRRScore(tournamentId, round.roundNumber - 1, match.id, s1, s2)
                   }
+                  onEdit={(s1, s2) =>
+                    submitRRScore(tournamentId, round.roundNumber - 1, match.id, s1, s2)
+                  }
                 />
               ))}
             </div>

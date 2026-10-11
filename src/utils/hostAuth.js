@@ -1,0 +1,25 @@
+// SHA-256 of the host password, so the plain text isn't shipped in the bundle
+const PASSWORD_HASH = '106a6a89e47bee59eeeb413371f5f656e0f89d4b2e233148bdbc17b4ff6329e1';
+const UNLOCK_KEY = 'manageUnlocked';
+
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function isHostUnlocked() {
+  try {
+    return sessionStorage.getItem(UNLOCK_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+// Returns true and remembers the unlock for this browser session if the password matches
+export async function unlockHost(password) {
+  if ((await sha256(password)) !== PASSWORD_HASH) return false;
+  try {
+    sessionStorage.setItem(UNLOCK_KEY, '1');
+  } catch { /* ignore */ }
+  return true;
+}

@@ -9,7 +9,7 @@ import ManageTournament from './ManageTournament';
 
 const TABS = {
   roundrobin: ['Matches', 'Standings'],
-  playoffs: ['Bracket', 'Standings'],
+  playoffs: ['Bracket', 'Standings', 'Round Robin'],
 };
 
 export default function TournamentView({ tournamentId, pin, go }) {
@@ -184,6 +184,13 @@ export default function TournamentView({ tournamentId, pin, go }) {
                 teams={tournament.teams}
                 teamCount={tournament.teams.length}
                 showPlayoffNote
+              />
+            )}
+            {tab === 'Round Robin' && (
+              <RoundRobin
+                rounds={tournament.rounds}
+                teams={tournament.teams}
+                tournamentId={tournament.id}
               />
             )}
           </>

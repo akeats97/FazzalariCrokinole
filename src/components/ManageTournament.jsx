@@ -1,25 +1,10 @@
 import { useState } from 'react';
 import { updateTeamNames, deleteTournament } from '../firebase/db';
-
-// SHA-256 of the manage password, so the plain text isn't shipped in the bundle
-const PASSWORD_HASH = '106a6a89e47bee59eeeb413371f5f656e0f89d4b2e233148bdbc17b4ff6329e1';
-const UNLOCK_KEY = 'manageUnlocked';
-
-async function sha256(text) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
-function isUnlocked() {
-  try {
-    return sessionStorage.getItem(UNLOCK_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
+import { isHostUnlocked } from '../utils/hostAuth';
+import PasswordPrompt from './PasswordPrompt';
 
 export default function ManageTournament({ tournament, go, onClose }) {
-  const [unlocked, setUnlocked] = useState(isUnlocked);
+  const [unlocked, setUnlocked] = useState(isHostUnlocked);
   const [names, setNames] = useState(() => tournament.teams.map((t) => [...t.names]));
   const [confirming, setConfirming] = useState(null); // 'restart' | 'delete' | null
   const [busy, setBusy] = useState(false);
@@ -96,7 +81,10 @@ export default function ManageTournament({ tournament, go, onClose }) {
         </div>
 
         {!unlocked ? (
-          <PasswordPrompt onUnlock={() => setUnlocked(true)} />
+          <PasswordPrompt
+            onUnlock={() => setUnlocked(true)}
+            message="Enter the host password to edit players or delete the tournament."
+          />
         ) : (
         <div className="flex flex-col gap-8 px-5 py-6">
           {/* Edit names */}
@@ -191,52 +179,3 @@ export default function ManageTournament({ tournament, go, onClose }) {
   );
 }
 
-function PasswordPrompt({ onUnlock }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [checking, setChecking] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setChecking(true);
-    const ok = (await sha256(password)) === PASSWORD_HASH;
-    setChecking(false);
-    if (!ok) {
-      setError('Incorrect password.');
-      setPassword('');
-      return;
-    }
-    try {
-      sessionStorage.setItem(UNLOCK_KEY, '1');
-    } catch { /* ignore */ }
-    onUnlock();
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-6">
-      <p className="font-sans text-sm text-ink-muted">
-        Enter the host password to edit players or delete the tournament.
-      </p>
-      <input
-        type="password"
-        value={password}
-        onChange={(e) => { setPassword(e.target.value); setError(''); }}
-        placeholder="Password"
-        autoFocus
-        className="font-sans bg-cream-card border-2 border-ink/15 focus:border-forest rounded px-4 py-3 outline-none transition-colors text-ink text-base"
-      />
-      {error && (
-        <div className="border-l-4 border-l-rosso bg-rosso/5 border border-rosso/20 rounded px-4 py-3">
-          <p className="font-sans text-sm text-rosso">{error}</p>
-        </div>
-      )}
-      <button
-        type="submit"
-        disabled={!password || checking}
-        className="btn-primary disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Unlock
-      </button>
-    </form>
-  );
-}
