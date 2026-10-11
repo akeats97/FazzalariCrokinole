@@ -160,10 +160,10 @@ export function generateBracket(standings) {
     feedsTo, feedsSlot,
   });
 
-  // 4 teams, or 8 teams (top 4 advance): Semifinals → Final
-  if (n === 4 || n === 8) {
+  // 4 teams: Semifinals → Final
+  if (n === 4) {
     return {
-      phase: n === 4 ? '4team' : '8team-top4',
+      phase: '4team',
       rounds: [
         {
           name: 'Semifinals',
