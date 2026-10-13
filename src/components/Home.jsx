@@ -59,6 +59,11 @@ export default function Home({ go }) {
                   ? reigning.winners.join(' & ')
                   : reigning.winners}
               </p>
+              {reigning.date && (
+                <p className="font-sans text-xs text-ink-muted mt-0.5">
+                  Won {wonOn(reigning.date)}
+                </p>
+              )}
               <p className="font-sans text-xs text-ink-muted mt-1">
                 Location of cup: Welland, ON
               </p>
@@ -116,6 +121,11 @@ export default function Home({ go }) {
       <Tricolore />
     </div>
   );
+}
+
+function wonOn(date) {
+  const d = date.toDate ? date.toDate() : new Date(date);
+  return d.toLocaleDateString('en-CA', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
 function Spinner() {
