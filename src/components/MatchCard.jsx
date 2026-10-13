@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
-import { isHostUnlocked } from '../utils/hostAuth';
-import PasswordPrompt from './PasswordPrompt';
+import { useAdmin } from '../utils/hostAuth';
 
 const ARENA_CONFIG = {
   'Cucina Colosseo': {
@@ -44,7 +43,7 @@ export default function MatchCard({
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr] = useState('');
   const [editing, setEditing] = useState(false);
-  const [askingPassword, setAskingPassword] = useState(false);
+  const admin = useAdmin();
   // Score we just saved, shown until the live update arrives (it can lag on a sleepy phone)
   const [saved, setSaved] = useState(null);
 
@@ -65,11 +64,6 @@ export default function MatchCard({
     setS2(String(shown.score2));
     setErr('');
     setEditing(true);
-  }
-
-  function handleEditClick() {
-    if (isHostUnlocked()) startEdit();
-    else setAskingPassword(true);
   }
 
   function cancelEdit() {
@@ -120,9 +114,9 @@ export default function MatchCard({
         <div className="flex items-center gap-2">
           {label && <span className="font-sans text-xs text-ink-faint">{label}</span>}
           {isCompleted && <span className="font-sans text-xs text-forest font-bold">✓ Final</span>}
-          {isCompleted && onEdit && !askingPassword && (
+          {isCompleted && onEdit && admin && (
             <button
-              onClick={handleEditClick}
+              onClick={startEdit}
               className="font-sans text-xs font-bold uppercase tracking-wide text-ink-muted hover:text-ink underline underline-offset-2"
             >
               Edit
@@ -202,16 +196,6 @@ export default function MatchCard({
           ) : null}
         </div>
       </div>
-
-      {/* Password before editing a final score */}
-      {askingPassword && (
-        <PasswordPrompt
-          compact
-          message="Enter the host password to edit this score."
-          onCancel={() => setAskingPassword(false)}
-          onUnlock={() => { setAskingPassword(false); startEdit(); }}
-        />
-      )}
 
       {/* Submit */}
       {showInputs && (

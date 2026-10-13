@@ -6,6 +6,7 @@ import PlayoffBracket from './PlayoffBracket';
 import WinnerScreen from './WinnerScreen';
 import Tricolore from './Tricolore';
 import ManageTournament from './ManageTournament';
+import { useAdmin } from '../utils/hostAuth';
 import { generateBracket } from '../utils/tournamentLogic';
 
 const TABS = {
@@ -18,6 +19,7 @@ export default function TournamentView({ tournamentId, go }) {
   const [error, setError] = useState('');
   const [tab, setTab] = useState('Matches');
   const [showManage, setShowManage] = useState(false);
+  const admin = useAdmin();
   const prevStatus = useRef(null);
 
   // Bracket as it would be seeded right now (arenas are random, so only rebuild when standings change)
@@ -101,18 +103,20 @@ export default function TournamentView({ tournamentId, go }) {
           <span className={`font-sans text-xs font-bold text-white uppercase tracking-wide rounded-full px-3 py-1 ${statusColor}`}>
             {statusLabel}
           </span>
-          <button
-            onClick={() => setShowManage(true)}
-            className="text-xl leading-none text-ink-muted hover:text-ink transition-colors"
-            title="Manage tournament"
-            aria-label="Manage tournament"
-          >
-            ⚙
-          </button>
+          {admin && (
+            <button
+              onClick={() => setShowManage(true)}
+              className="text-xl leading-none text-ink-muted hover:text-ink transition-colors"
+              title="Manage tournament"
+              aria-label="Manage tournament"
+            >
+              ⚙
+            </button>
+          )}
         </div>
       </div>
 
-      {showManage && (
+      {showManage && admin && (
         <ManageTournament
           tournament={tournament}
           go={go}

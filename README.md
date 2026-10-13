@@ -17,7 +17,7 @@ A mobile-first web app for running the annual Fazzalari family Crokinole tournam
 - The final is a best-of-3 series
 - Crowning the winner adds them to the **Cup History** — a permanent record in Firestore
 - Home screen always shows the reigning champions
-- **Host mode** (password-protected, remembered per device): the ⚙ Manage panel (rename players, start over, delete tournament), editing any score, and champion photos in Cup History
+- **Admin sign-in** (link at the bottom of the home page, password-protected, remembered per device): until someone signs in, the ⚙ Manage panel (rename players, start over, delete tournament), score Edit links, and Cup History photo controls are hidden entirely
 - Each game records `scoredAt` / `editedAt` (ms) for later stats
 - A banner prompts everyone to refresh when a new version is deployed; a refresh reopens the same screen
 
@@ -62,7 +62,7 @@ src/
     db.js                  # All Firestore reads/writes
   utils/
     tournamentLogic.js     # Pure functions: team pairing, round robin, bracket, standings, format summary
-    hostAuth.js            # Host password check (hashed) and per-device host mode
+    hostAuth.js            # Admin password check (hashed), per-device sign-in, useAdmin hook
     compressImage.js       # Shrinks photos to fit a Firestore doc
     useNewVersion.js       # Detects a new deploy and shows the refresh banner
   components/
@@ -77,8 +77,8 @@ src/
     WinnerScreen.jsx       # Shown when a champion is crowned
     CupHistory.jsx         # All-time champions list with photos
     Tricolore.jsx          # Decorative stripe component
-    ManageTournament.jsx   # Host panel: rename players, start over, delete, lock host mode
-    PasswordPrompt.jsx     # Shared host password form
+    ManageTournament.jsx   # Admin panel: rename players, start over, delete
+    PasswordPrompt.jsx     # Admin sign-in form
     CupPhoto.jsx           # Champion photo display and upload for Cup History entries
 
 scripts/

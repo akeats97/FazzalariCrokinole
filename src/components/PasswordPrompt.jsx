@@ -58,7 +58,7 @@ export default function PasswordPrompt({ onUnlock, onCancel, message, compact = 
             ? 'flex-1 py-2.5 rounded bg-ink text-cream font-sans font-bold text-sm uppercase tracking-wider disabled:opacity-30 disabled:cursor-not-allowed'
             : 'btn-primary disabled:opacity-40 disabled:cursor-not-allowed'}
         >
-          Unlock
+          Sign In
         </button>
       </div>
     </form>

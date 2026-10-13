@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getCupPhoto, setCupPhoto, removeCupPhoto } from '../firebase/db';
 import { compressImage } from '../utils/compressImage';
-import { isHostUnlocked } from '../utils/hostAuth';
-import PasswordPrompt from './PasswordPrompt';
+import { useAdmin } from '../utils/hostAuth';
 
 // Champion photo for a Cup History entry: an uploaded photo wins over the static imageUrl
 export function CupPhotoImage({ entry, alt, className = 'w-full h-auto' }) {
@@ -24,14 +23,15 @@ export function CupPhotoImage({ entry, alt, className = 'w-full h-auto' }) {
 }
 
 export function CupPhotoControls({ entry }) {
-  const [mode, setMode] = useState('idle'); // idle | password | ready | saving | confirmRemove
+  const admin = useAdmin();
+  const [mode, setMode] = useState('idle'); // idle | ready | saving | confirmRemove
   const [error, setError] = useState('');
   const hasUploaded = Boolean(entry.photoUpdatedAt);
   const hasAnyPhoto = hasUploaded || Boolean(entry.imageUrl);
 
   function start() {
     setError('');
-    setMode(isHostUnlocked() ? 'ready' : 'password');
+    setMode('ready');
   }
 
   async function handleFile(e) {
@@ -65,6 +65,8 @@ export function CupPhotoControls({ entry }) {
     }
   }
 
+  if (!admin) return null;
+
   if (mode === 'idle') {
     return (
       <div className="px-4 pb-3 -mt-1">
@@ -75,17 +77,6 @@ export function CupPhotoControls({ entry }) {
           {hasAnyPhoto ? 'Change photo' : 'Add photo'}
         </button>
       </div>
-    );
-  }
-
-  if (mode === 'password') {
-    return (
-      <PasswordPrompt
-        compact
-        message="Enter the host password to change this photo."
-        onCancel={() => setMode('idle')}
-        onUnlock={() => setMode('ready')}
-      />
     );
   }
 

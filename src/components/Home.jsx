@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { checkActiveTournament, subscribeCupHistory } from '../firebase/db';
 import Tricolore from './Tricolore';
 import { CupPhotoImage } from './CupPhoto';
+import PasswordPrompt from './PasswordPrompt';
+import { useAdmin, lockHost } from '../utils/hostAuth';
 
 export default function Home({ go }) {
   const [activeTournament, setActiveTournament] = useState(undefined);
@@ -110,10 +112,43 @@ export default function Home({ go }) {
             </button>
           </div>
         )}
+
+        <AdminSignIn />
       </div>
 
       <Tricolore />
     </div>
+  );
+}
+
+// Admin controls (score edits, Manage Tournament, photos) stay hidden until signed in
+function AdminSignIn() {
+  const admin = useAdmin();
+  const [open, setOpen] = useState(false);
+  const link = 'font-sans text-xs text-ink-faint hover:text-ink-muted underline underline-offset-2';
+
+  if (admin) {
+    return (
+      <p className="font-sans text-xs text-ink-faint">
+        Signed in as admin ·{' '}
+        <button className={link} onClick={lockHost}>Sign out</button>
+      </p>
+    );
+  }
+  if (open) {
+    return (
+      <div className="w-full max-w-sm bg-cream-card border border-ink/10 rounded pt-4">
+        <PasswordPrompt
+          compact
+          message="Admin sign in"
+          onCancel={() => setOpen(false)}
+          onUnlock={() => setOpen(false)}
+        />
+      </div>
+    );
+  }
+  return (
+    <button className={link} onClick={() => setOpen(true)}>Admin sign in</button>
   );
 }
 
