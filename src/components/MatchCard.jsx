@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { isHostUnlocked } from '../utils/hostAuth';
 import PasswordPrompt from './PasswordPrompt';
 
@@ -14,6 +14,15 @@ const ARENA_CONFIG = {
     dot: 'bg-rosso',
   },
 };
+
+const SAVE_TIMEOUT_MS = 15_000;
+
+function withTimeout(promise) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), SAVE_TIMEOUT_MS)),
+  ]);
+}
 
 const DEFAULT_ARENA = {
   border: 'border-l-ink/30',
@@ -36,17 +45,24 @@ export default function MatchCard({
   const [err, setErr] = useState('');
   const [editing, setEditing] = useState(false);
   const [askingPassword, setAskingPassword] = useState(false);
+  // Score we just saved, shown until the live update arrives (it can lag on a sleepy phone)
+  const [saved, setSaved] = useState(null);
 
+  useEffect(() => {
+    setSaved(null);
+  }, [match.score1, match.score2, match.completed]);
+
+  const shown = saved ? { ...match, ...saved, completed: true } : match;
   const arena = ARENA_CONFIG[match.arena] ?? DEFAULT_ARENA;
-  const isTBD = !onSubmit && !match.completed;
-  const isCompleted = match.completed && !editing;
+  const isTBD = !onSubmit && !shown.completed;
+  const isCompleted = shown.completed && !editing;
   const showInputs = !isCompleted && !isTBD;
-  const isWinner1 = isCompleted && Number(match.score1) > Number(match.score2);
-  const isWinner2 = isCompleted && Number(match.score2) > Number(match.score1);
+  const isWinner1 = isCompleted && Number(shown.score1) > Number(shown.score2);
+  const isWinner2 = isCompleted && Number(shown.score2) > Number(shown.score1);
 
   function startEdit() {
-    setS1(String(match.score1));
-    setS2(String(match.score2));
+    setS1(String(shown.score1));
+    setS2(String(shown.score2));
     setErr('');
     setEditing(true);
   }
@@ -70,25 +86,23 @@ export default function MatchCard({
       return;
     }
     if (!allowTie && n1 === n2) {
-      setErr('No ties in the playoffs — one team must win.');
+      setErr('No ties in the playoffs. One team must win.');
       return;
     }
     setErr('');
     setSubmitting(true);
     try {
-      if (editing) {
-        await onEdit(n1, n2);
-        setEditing(false);
-        setSubmitting(false);
-      } else {
-        await onSubmit(n1, n2);
-      }
+      await withTimeout(editing ? onEdit(n1, n2) : onSubmit(n1, n2));
+      setSaved({ score1: n1, score2: n2 });
+      setEditing(false);
     } catch (error) {
       const msgs = {
         DOWNSTREAM_STARTED: "Can't change the winner: the next game has already been scored.",
-        PLAYOFFS_STARTED: "Round robin scores are locked once a playoff game has been scored.",
+        PLAYOFFS_STARTED: 'Round robin scores are locked once a playoff game has been scored.',
+        TIMEOUT: 'No response. Check your connection and submit again.',
       };
       setErr(msgs[error.message] ?? 'Failed to save. Try again.');
+    } finally {
       setSubmitting(false);
     }
   }
@@ -135,7 +149,7 @@ export default function MatchCard({
           </div>
           {isCompleted ? (
             <span className={`font-headline text-2xl font-bold tabular-nums shrink-0 ${isWinner1 ? 'text-ink' : 'text-ink-muted'}`}>
-              {match.score1}
+              {shown.score1}
             </span>
           ) : showInputs ? (
             <input
@@ -172,7 +186,7 @@ export default function MatchCard({
           </div>
           {isCompleted ? (
             <span className={`font-headline text-2xl font-bold tabular-nums shrink-0 ${isWinner2 ? 'text-ink' : 'text-ink-muted'}`}>
-              {match.score2}
+              {shown.score2}
             </span>
           ) : showInputs ? (
             <input

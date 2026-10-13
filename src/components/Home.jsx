@@ -72,37 +72,24 @@ export default function Home({ go }) {
                   <p className="font-sans text-xs uppercase tracking-wider text-ink-muted mb-1">
                     Tournament In Progress
                   </p>
-                  <p className="font-headline text-3xl font-bold text-ink tracking-widest">
-                    PIN: {activeTournament.pin}
+                  <p className="font-headline text-2xl font-bold text-ink">
+                    {activeTournament.status === 'playoffs' ? 'Playoffs' : 'Round Robin'}
                   </p>
                   <p className="font-sans text-xs text-ink-muted mt-1">
-                    Share this PIN with all players
+                    {activeTournament.teamCount} teams
                   </p>
                 </div>
                 <button
                   className="btn-primary"
-                  onClick={() =>
-                    go('tournament', {
-                      tournamentId: activeTournament.tournamentId,
-                      pin: activeTournament.pin,
-                    })
-                  }
+                  onClick={() => go('tournament', { tournamentId: activeTournament.tournamentId })}
                 >
-                  Rejoin Tournament
-                </button>
-                <button className="btn-secondary" onClick={() => go('join')}>
-                  Join with PIN
+                  Open Tournament
                 </button>
               </>
             ) : (
-              <>
-                <button className="btn-primary" onClick={() => go('create')}>
-                  Start Tournament
-                </button>
-                <button className="btn-secondary" onClick={() => go('join')}>
-                  Join Tournament
-                </button>
-              </>
+              <button className="btn-primary" onClick={() => go('create')}>
+                Start Tournament
+              </button>
             )}
 
             <div className="relative flex items-center gap-3 mt-1">

@@ -229,20 +229,20 @@ export function generateBracket(standings) {
     };
   }
 
-  // 6 teams: Semis → Final Four → Final
+  // 6 teams: Quarterfinals (1st and 2nd have byes) → Semifinals → Final
   if (n === 6) {
     return {
       phase: '6team',
       rounds: [
         {
-          name: 'Semifinals',
+          name: 'Quarterfinals',
           matches: [
             mk('sf1', s(3), s(6), 'ff1', 1),
             mk('sf2', s(4), s(5), 'ff2', 1),
           ],
         },
         {
-          name: 'Final Four',
+          name: 'Semifinals',
           matches: [
             mk('ff1', null, s(1), 'final', 1),
             mk('ff2', null, s(2), 'final', 2),
@@ -253,13 +253,13 @@ export function generateBracket(standings) {
     };
   }
 
-  // 7 teams: First Round → Semis → Final
+  // 7 teams: Quarterfinals (1st has a bye) → Semifinals → Final
   if (n === 7) {
     return {
       phase: '7team',
       rounds: [
         {
-          name: 'First Round',
+          name: 'Quarterfinals',
           matches: [
             mk('fr1', s(2), s(7), 'sf1', 2),
             mk('fr2', s(3), s(6), 'sf2', 1),
@@ -318,10 +318,17 @@ export function describeFormat(n, gamesPerTeam, playoffTeams) {
   const bracket = generateBracket(seeds);
   const playoffStages = [...bracket.rounds.map((r) => r.name), 'Final (best of 3)'];
   const playoffGames = bracket.rounds.reduce((sum, r) => sum + r.matches.length, 0);
-  return { rrGames, rrRounds, playoffStages, playoffGames, eliminated: n - playoffTeams };
+  return { rrGames, rrRounds, playoffStages, playoffGames, eliminated: n - playoffTeams, bracket };
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────
+
+// 1 -> "1st", 2 -> "2nd", 11 -> "11th"
+export function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
 
 export function getTeamName(teams, teamId) {
   if (!teamId) return 'TBD';

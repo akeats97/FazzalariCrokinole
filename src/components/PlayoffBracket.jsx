@@ -1,4 +1,5 @@
 import MatchCard from './MatchCard';
+import BracketDiagram from './BracketDiagram';
 import { getTeamName } from '../utils/tournamentLogic';
 import { submitBracketScore, submitFinalGame } from '../firebase/db';
 
@@ -33,7 +34,7 @@ function slotName(bracket, teams, teamId, targetId, slot) {
 }
 
 // preview: a projected bracket shown during the round robin; read-only
-export default function PlayoffBracket({ bracket, teams, tournamentId, preview = false }) {
+export default function PlayoffBracket({ bracket, teams, standings, tournamentId, preview = false }) {
   if (!bracket) return null;
 
   return (
@@ -46,23 +47,28 @@ export default function PlayoffBracket({ bracket, teams, tournamentId, preview =
           </p>
         </div>
       )}
-      {bracket.rounds.map((round) => (
-        <BracketRound
-          key={round.name}
-          round={round}
-          bracket={bracket}
-          teams={teams}
-          preview={preview}
-          tournamentId={tournamentId}
-        />
-      ))}
-      <ChampionshipFinal
-        bracket={bracket}
-        final={bracket.final}
-        preview={preview}
-        teams={teams}
-        tournamentId={tournamentId}
-      />
+      <BracketDiagram bracket={bracket} teams={teams} standings={standings} />
+      {!preview && (
+        <>
+          {bracket.rounds.map((round) => (
+            <BracketRound
+              key={round.name}
+              round={round}
+              bracket={bracket}
+              teams={teams}
+              preview={preview}
+              tournamentId={tournamentId}
+            />
+          ))}
+          <ChampionshipFinal
+            bracket={bracket}
+            final={bracket.final}
+            preview={preview}
+            teams={teams}
+            tournamentId={tournamentId}
+          />
+        </>
+      )}
     </div>
   );
 }

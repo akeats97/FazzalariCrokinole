@@ -13,11 +13,10 @@ const TABS = {
   playoffs: ['Bracket', 'Standings', 'Round Robin'],
 };
 
-export default function TournamentView({ tournamentId, pin, go }) {
+export default function TournamentView({ tournamentId, go }) {
   const [tournament, setTournament] = useState(null);
   const [error, setError] = useState('');
   const [tab, setTab] = useState('Matches');
-  const [copied, setCopied] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const prevStatus = useRef(null);
 
@@ -53,14 +52,6 @@ export default function TournamentView({ tournamentId, pin, go }) {
     if (!validTabs.includes(tab)) setTab(validTabs[0]);
   }, [tournament?.status]);
 
-  async function copyPin() {
-    try {
-      await navigator.clipboard.writeText(pin ?? tournament?.pin ?? '');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch { /* ignore */ }
-  }
-
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 gap-4 text-center bg-cream">
@@ -86,7 +77,6 @@ export default function TournamentView({ tournamentId, pin, go }) {
   }
 
   const tabs = TABS[tournament.status] ?? ['Matches'];
-  const displayPin = pin ?? tournament.pin;
   const statusLabel = tournament.status === 'roundrobin' ? 'Round Robin' : 'Playoffs';
   const statusColor = tournament.status === 'playoffs' ? 'bg-rosso' : 'bg-forest';
 
@@ -103,20 +93,9 @@ export default function TournamentView({ tournamentId, pin, go }) {
           ← Home
         </button>
 
-        {/* PIN chip */}
-        <button
-          onClick={copyPin}
-          className="flex items-center gap-2 bg-cream-card border-2 border-ink/15 hover:border-forest rounded px-3 py-1.5 transition-colors"
-          title="Tap to copy PIN"
-        >
-          <span className="font-sans text-xs text-ink-muted font-bold uppercase tracking-wider">PIN</span>
-          <span className="font-headline font-bold text-xl tracking-widest text-ink">
-            {displayPin}
-          </span>
-          <span className="font-sans text-xs text-ink-faint">
-            {copied ? '✓' : '⎘'}
-          </span>
-        </button>
+        <span className="font-headline font-bold text-lg text-ink truncate">
+          Fazzalari Cup
+        </span>
 
         <div className="flex items-center gap-2 shrink-0">
           <span className={`font-sans text-xs font-bold text-white uppercase tracking-wide rounded-full px-3 py-1 ${statusColor}`}>
@@ -182,6 +161,7 @@ export default function TournamentView({ tournamentId, pin, go }) {
               <PlayoffBracket
                 bracket={projectedBracket}
                 teams={tournament.teams}
+                standings={tournament.standings}
                 tournamentId={tournament.id}
                 preview
               />
@@ -194,6 +174,7 @@ export default function TournamentView({ tournamentId, pin, go }) {
               <PlayoffBracket
                 bracket={tournament.bracket}
                 teams={tournament.teams}
+                standings={tournament.standings}
                 tournamentId={tournament.id}
               />
             )}

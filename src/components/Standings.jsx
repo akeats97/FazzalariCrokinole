@@ -4,8 +4,8 @@ import { getTeamName } from '../utils/tournamentLogic';
 const PLAYOFF_NOTES = {
   4: { byeCount: 0, note: 'All 4 play in the Semifinals.' },
   5: { byeCount: 1, note: '1st place advances directly to the Semifinals. 4th vs 5th in Play-in.' },
-  6: { byeCount: 2, note: '1st and 2nd place advance directly to the Final Four.' },
-  7: { byeCount: 1, note: '1st place advances directly to the Semifinals.' },
+  6: { byeCount: 2, note: '1st and 2nd place skip the Quarterfinals and go straight to the Semifinals.' },
+  7: { byeCount: 1, note: '1st place skips the Quarterfinals and goes straight to the Semifinals.' },
   8: { byeCount: 0, note: 'All 8 teams play in the Quarterfinals.' },
 };
 

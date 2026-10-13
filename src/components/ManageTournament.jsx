@@ -55,8 +55,8 @@ export default function ManageTournament({ tournament, go, onClose }) {
     try {
       const players = tournament.teams.flatMap((t) => t.names);
       await deleteTournament(tournament.id);
-      if (confirming === 'restart') go('create', { players, tournamentId: null, pin: null });
-      else go('home', { tournamentId: null, pin: null });
+      if (confirming === 'restart') go('create', { players, tournamentId: null });
+      else go('home', { tournamentId: null });
     } catch {
       setError('Something went wrong. Please try again.');
       setBusy(false);
@@ -146,7 +146,7 @@ export default function ManageTournament({ tournament, go, onClose }) {
                   {confirming === 'restart'
                     ? 'Delete this tournament and set up a new one with the same players?'
                     : 'Permanently delete this tournament?'}{' '}
-                  Everyone using PIN {tournament.pin} will be sent out.
+                  Everyone following along will be sent back to the home screen.
                 </p>
                 <div className="flex gap-2">
                   <button

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import Home from './components/Home';
 import CreateTournament from './components/CreateTournament';
-import JoinTournament from './components/JoinTournament';
 import TournamentView from './components/TournamentView';
 import CupHistory from './components/CupHistory';
 import { useNewVersion } from './utils/useNewVersion';
@@ -12,9 +11,9 @@ const NAV_KEY = 'nav';
 function loadNav() {
   try {
     const nav = JSON.parse(sessionStorage.getItem(NAV_KEY));
-    if (nav && nav.view !== 'create') return nav;
+    if (nav && nav.view !== 'create' && nav.view !== 'join') return nav;
   } catch { /* ignore */ }
-  return { view: 'home', tournamentId: null, pin: null };
+  return { view: 'home', tournamentId: null };
 }
 
 function saveNav(nav) {
@@ -27,7 +26,6 @@ export default function App() {
   const [initial] = useState(loadNav);
   const [view, setView] = useState(initial.view);
   const [tournamentId, setTournamentId] = useState(initial.tournamentId);
-  const [pin, setPin] = useState(initial.pin);
   const [prefillPlayers, setPrefillPlayers] = useState([]);
   const newVersion = useNewVersion();
 
@@ -35,10 +33,8 @@ export default function App() {
     const next = {
       view: to,
       tournamentId: opts.tournamentId !== undefined ? opts.tournamentId : tournamentId,
-      pin: opts.pin !== undefined ? opts.pin : pin,
     };
     setTournamentId(next.tournamentId);
-    setPin(next.pin);
     if (to === 'create') setPrefillPlayers(opts.players ?? []);
     setView(to);
     saveNav(next);
@@ -49,9 +45,8 @@ export default function App() {
     <div className="min-h-screen bg-gray-950 text-white font-sans">
       {view === 'home' && <Home go={go} />}
       {view === 'create' && <CreateTournament go={go} initialPlayers={prefillPlayers} />}
-      {view === 'join' && <JoinTournament go={go} />}
       {view === 'tournament' && (
-        <TournamentView tournamentId={tournamentId} pin={pin} go={go} />
+        <TournamentView tournamentId={tournamentId} go={go} />
       )}
       {view === 'history' && <CupHistory go={go} />}
 

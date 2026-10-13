@@ -2,14 +2,15 @@ import { useState } from 'react';
 import {
   generateTeams,
   generateRoundRobin,
-  generatePin,
   shuffle,
   gamesPerTeamOptions,
   playoffOptions,
   describeFormat,
+  ordinal,
 } from '../utils/tournamentLogic';
 import { createTournament } from '../firebase/db';
 import Tricolore from './Tricolore';
+import BracketDiagram from './BracketDiagram';
 
 const MIN_PLAYERS = 8;  // 4 teams of 2
 const MAX_PLAYERS = 16; // 8 teams of 2
@@ -67,14 +68,13 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
     setLoading(true);
     setError('');
     try {
-      const pin = generatePin();
       const rounds = generateRoundRobin(teams, gamesPerTeam);
-      const id = await createTournament({ pin, teams, rounds, format: { gamesPerTeam, playoffTeams } });
-      go('tournament', { tournamentId: id, pin });
+      const id = await createTournament({ teams, rounds, format: { gamesPerTeam, playoffTeams } });
+      go('tournament', { tournamentId: id });
     } catch (err) {
       if (err.message === 'ACTIVE_EXISTS') {
         setError(
-          `A tournament is already active (PIN: ${err.existingPin}). Complete it before starting a new one.`
+          'A tournament is already in progress. Finish it, or delete it from its ⚙ menu, before starting a new one.'
         );
         setPhase('names');
       } else {
@@ -308,6 +308,21 @@ function FormatPicker({ teamCount, gamesPerTeam, setGamesPerTeam, playoffTeams, 
         <p className="font-sans text-xs text-ink-muted">
           Ranked by wins, then point differential, then points scored.
         </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="font-sans text-xs font-bold uppercase tracking-wider text-ink-muted">
+          Playoff bracket (by round robin finish)
+        </p>
+        <BracketDiagram
+          bracket={f.bracket}
+          seedNames
+          eliminatedNote={
+            f.eliminated > 0
+              ? `${ordinal(playoffTeams + 1)} to ${ordinal(teamCount)} place are out after the round robin.`
+              : null
+          }
+        />
       </div>
     </div>
   );

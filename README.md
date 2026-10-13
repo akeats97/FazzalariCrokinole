@@ -1,6 +1,6 @@
 # Fazzalari Crokinole Cup
 
-A mobile-first web app for running the annual Fazzalari family Crokinole tournament. Built to work on phones at the table — players join by PIN, scores get entered in real time, and winners are immortalized in the Cup History.
+A mobile-first web app for running the annual Fazzalari family Crokinole tournament. Built to work on phones at the table: there's only ever one tournament, everyone opens it from the home screen, scores get entered in real time, and winners are immortalized in the Cup History.
 
 **Live site:** https://crokinole.alexkeats.ca
 
@@ -9,7 +9,7 @@ A mobile-first web app for running the annual Fazzalari family Crokinole tournam
 ## What it does
 
 - **Host** creates a tournament, enters all player names, and the app randomly pairs them into teams of 2
-- **Players** join on their own phones using a 4-digit PIN
+- **Players** open the tournament on their own phones from the home screen (one tournament at a time, no PIN)
 - Host picks the **format** at setup: round robin games per team, and whether everyone or the top 4 make the playoffs. The format is saved on the tournament doc.
 - Round robin phase: every team plays exactly the chosen number of games (no repeat opponents), across 2 arenas, 2 matches at a time
 - Standings auto-calculate after every score entry (wins, then point differential, then points scored), with a playoff cut line when not everyone advances
@@ -61,14 +61,14 @@ src/
     config.js              # Firebase init, exports `db`
     db.js                  # All Firestore reads/writes
   utils/
-    tournamentLogic.js     # Pure functions: PIN gen, team pairing, round robin, bracket, standings, format summary
+    tournamentLogic.js     # Pure functions: team pairing, round robin, bracket, standings, format summary
     hostAuth.js            # Host password check (hashed) and per-device host mode
     compressImage.js       # Shrinks photos to fit a Firestore doc
     useNewVersion.js       # Detects a new deploy and shows the refresh banner
   components/
-    Home.jsx               # Landing page — shows reigning champs, Start/Join/History buttons
+    Home.jsx               # Landing page — shows reigning champs, Start/Open Tournament and History buttons
     CreateTournament.jsx   # Enter player names → random team pairing → create tournament
-    JoinTournament.jsx     # Enter PIN to join an existing tournament
+    BracketDiagram.jsx     # Tree-style bracket picture (setup preview, projected and live bracket)
     TournamentView.jsx     # Main tournament screen — tabs for Matches/Standings or Bracket/Standings
     RoundRobin.jsx         # Round robin match list
     MatchCard.jsx          # Individual match card with score entry
@@ -102,8 +102,7 @@ Navigation is handled by a single `go(view, opts)` function in `App.jsx`. There 
 
 - `home` → Home
 - `create` → CreateTournament
-- `join` → JoinTournament
-- `tournament` → TournamentView (requires `tournamentId` + `pin`)
+- `tournament` → TournamentView (requires `tournamentId`)
 - `history` → CupHistory
 
 ---
@@ -113,16 +112,17 @@ Navigation is handled by a single `go(view, opts)` function in `App.jsx`. There 
 ### `meta/activeTournament`
 Singleton document. Points to the currently active tournament. Cleared when a tournament completes.
 ```
-{ tournamentId: string | null, pin: string | null }
+{ tournamentId: string | null }
 ```
 
 ### `tournaments/{id}`
 One document per tournament.
 ```
 {
-  id, pin, status,           // status: 'roundrobin' | 'playoffs' | 'complete'
+  id, status,                // status: 'roundrobin' | 'playoffs' | 'complete'
   teams,                     // [{ id, names: [string, string] }]
-  rounds,                    // round robin rounds with match results
+  format,                    // { gamesPerTeam, playoffTeams } (missing on older docs = all teams)
+  rounds,                    // round robin rounds; each game has scores, scoredAt, editedAt
   standings,                 // computed after each score submission
   bracket,                   // null until playoffs; see generateBracket()
   winnersTeamId,

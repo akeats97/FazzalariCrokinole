@@ -22,23 +22,12 @@ const META_REF = doc(db, 'meta', 'activeTournament');
 export async function checkActiveTournament() {
   const snap = await getDoc(META_REF);
   if (!snap.exists() || !snap.data().tournamentId) return null;
-  const { tournamentId, pin } = snap.data();
-  const tSnap = await getDoc(doc(db, 'tournaments', tournamentId));
-  if (!tSnap.exists()) return null;
-  if (tSnap.data().status === 'complete') return null;
-  return { tournamentId, pin };
-}
-
-export async function joinByPin(pin) {
-  const snap = await getDoc(META_REF);
-  if (!snap.exists() || !snap.data().tournamentId) return { error: 'NO_ACTIVE' };
   const { tournamentId } = snap.data();
   const tSnap = await getDoc(doc(db, 'tournaments', tournamentId));
-  if (!tSnap.exists()) return { error: 'NOT_FOUND' };
-  const data = tSnap.data();
-  if (data.pin !== pin) return { error: 'WRONG_PIN' };
-  if (data.status === 'complete') return { error: 'EXPIRED' };
-  return { tournamentId, data: { id: tournamentId, ...data } };
+  if (!tSnap.exists()) return null;
+  const { status, teams } = tSnap.data();
+  if (status === 'complete') return null;
+  return { tournamentId, status, teamCount: teams.length };
 }
 
 export function subscribeTournament(tournamentId, cb) {
@@ -56,7 +45,7 @@ export function subscribeCupHistory(cb) {
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 
-export async function createTournament({ pin, teams, rounds, format }) {
+export async function createTournament({ teams, rounds, format }) {
   // Block if active tournament already exists
   const activeMeta = await getDoc(META_REF);
   if (activeMeta.exists() && activeMeta.data().tournamentId) {
@@ -64,9 +53,7 @@ export async function createTournament({ pin, teams, rounds, format }) {
       doc(db, 'tournaments', activeMeta.data().tournamentId)
     );
     if (existing.exists() && existing.data().status !== 'complete') {
-      const err = new Error('ACTIVE_EXISTS');
-      err.existingPin = activeMeta.data().pin;
-      throw err;
+      throw new Error('ACTIVE_EXISTS');
     }
   }
 
@@ -82,7 +69,6 @@ export async function createTournament({ pin, teams, rounds, format }) {
 
   await setDoc(tRef, {
     id: tRef.id,
-    pin,
     status: 'roundrobin',
     teams,
     rounds,
@@ -93,7 +79,7 @@ export async function createTournament({ pin, teams, rounds, format }) {
     createdAt: serverTimestamp(),
     completedAt: null,
   });
-  await setDoc(META_REF, { tournamentId: tRef.id, pin });
+  await setDoc(META_REF, { tournamentId: tRef.id });
   return tRef.id;
 }
 
@@ -240,7 +226,7 @@ export async function crownWinner(tournamentId, winnerTeam) {
     date: serverTimestamp(),
     tournamentId,
   });
-  await setDoc(META_REF, { tournamentId: null, pin: null });
+  await setDoc(META_REF, { tournamentId: null });
 }
 
 // ── MANAGE ────────────────────────────────────────────────────────────────────
@@ -253,7 +239,7 @@ export async function deleteTournament(tournamentId) {
   await deleteDoc(doc(db, 'tournaments', tournamentId));
   const meta = await getDoc(META_REF);
   if (meta.exists() && meta.data().tournamentId === tournamentId) {
-    await setDoc(META_REF, { tournamentId: null, pin: null });
+    await setDoc(META_REF, { tournamentId: null });
   }
 }
 
