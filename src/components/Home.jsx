@@ -105,12 +105,6 @@ export default function Home({ go }) {
               </button>
             )}
 
-            <div className="relative flex items-center gap-3 mt-1">
-              <div className="flex-1 h-px bg-ink/10" />
-              <span className="font-sans text-xs text-ink-faint uppercase tracking-wider">or</span>
-              <div className="flex-1 h-px bg-ink/10" />
-            </div>
-
             <button className="btn-danger" onClick={() => go('history')}>
               🏆 Cup History
             </button>
