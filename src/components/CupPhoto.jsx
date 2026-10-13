@@ -5,7 +5,7 @@ import { isHostUnlocked } from '../utils/hostAuth';
 import PasswordPrompt from './PasswordPrompt';
 
 // Champion photo for a Cup History entry: an uploaded photo wins over the static imageUrl
-export function CupPhotoImage({ entry, alt }) {
+export function CupPhotoImage({ entry, alt, className = 'w-full h-auto' }) {
   const [uploaded, setUploaded] = useState(null);
   const version = entry.photoUpdatedAt?.toMillis?.() ?? null;
 
@@ -20,7 +20,7 @@ export function CupPhotoImage({ entry, alt }) {
 
   const src = uploaded ?? entry.imageUrl;
   if (!src) return null;
-  return <img src={src} alt={alt} className="w-full h-auto" />;
+  return <img src={src} alt={alt} className={className} />;
 }
 
 export function CupPhotoControls({ entry }) {

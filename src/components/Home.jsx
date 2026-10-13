@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { checkActiveTournament, subscribeCupHistory } from '../firebase/db';
 import Tricolore from './Tricolore';
+import { CupPhotoImage } from './CupPhoto';
 
 export default function Home({ go }) {
   const [activeTournament, setActiveTournament] = useState(undefined);
@@ -43,18 +44,25 @@ export default function Home({ go }) {
 
         {/* Reigning champions */}
         {reigning && (
-          <div className="w-full max-w-sm bg-gold/10 border border-gold/30 border-l-4 border-l-gold rounded px-4 py-3 text-center">
-            <p className="font-sans text-xs uppercase tracking-widest text-gold-dark font-bold mb-1">
-              Reigning Champions
-            </p>
-            <p className="font-headline font-bold text-xl text-ink">
-              {Array.isArray(reigning.winners)
-                ? reigning.winners.join(' & ')
-                : reigning.winners}
-            </p>
-            <p className="font-sans text-xs text-ink-muted mt-1">
-              Location of cup: Welland, ON
-            </p>
+          <div className="w-full max-w-sm bg-gold/10 border border-gold/30 border-l-4 border-l-gold rounded overflow-hidden text-center">
+            <CupPhotoImage
+              entry={reigning}
+              alt="Reigning champions"
+              className="w-full max-h-72 object-cover"
+            />
+            <div className="px-4 py-3">
+              <p className="font-sans text-xs uppercase tracking-widest text-gold-dark font-bold mb-1">
+                Reigning Champions
+              </p>
+              <p className="font-headline font-bold text-xl text-ink">
+                {Array.isArray(reigning.winners)
+                  ? reigning.winners.join(' & ')
+                  : reigning.winners}
+              </p>
+              <p className="font-sans text-xs text-ink-muted mt-1">
+                Location of cup: Welland, ON
+              </p>
+            </div>
           </div>
         )}
 
