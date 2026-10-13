@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { updateTeamNames, deleteTournament } from '../firebase/db';
-import { isHostUnlocked } from '../utils/hostAuth';
+import { isHostUnlocked, lockHost } from '../utils/hostAuth';
 import PasswordPrompt from './PasswordPrompt';
 
 export default function ManageTournament({ tournament, go, onClose }) {
@@ -171,6 +171,18 @@ export default function ManageTournament({ tournament, go, onClose }) {
                 </button>
               </>
             )}
+          </section>
+
+          <section className="flex flex-col gap-2 border-t border-ink/10 pt-6">
+            <p className="font-sans text-sm text-ink-muted">
+              Host mode is on for this phone, so score edits and this panel won't ask for the password.
+            </p>
+            <button
+              onClick={() => { lockHost(); onClose(); }}
+              className="btn-secondary"
+            >
+              Lock Host Mode on This Phone
+            </button>
           </section>
         </div>
         )}

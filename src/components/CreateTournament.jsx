@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { generateTeams, generateRoundRobin, generatePin, shuffle } from '../utils/tournamentLogic';
+import {
+  generateTeams,
+  generateRoundRobin,
+  generatePin,
+  shuffle,
+  gamesPerTeamOptions,
+  playoffOptions,
+  describeFormat,
+} from '../utils/tournamentLogic';
 import { createTournament } from '../firebase/db';
 import Tricolore from './Tricolore';
 
@@ -11,6 +19,8 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
   const [nameInput, setNameInput] = useState('');
   const [players, setPlayers] = useState(initialPlayers);
   const [teams, setTeams] = useState([]);
+  const [gamesPerTeam, setGamesPerTeam] = useState(2);
+  const [playoffTeams, setPlayoffTeams] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,6 +55,10 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
       return;
     }
     setError('');
+    const n = players.length / 2;
+    const gameOpts = gamesPerTeamOptions(n);
+    if (!gameOpts.includes(gamesPerTeam)) setGamesPerTeam(gameOpts.includes(2) ? 2 : gameOpts[0]);
+    if (!playoffOptions(n).includes(playoffTeams)) setPlayoffTeams(n);
     setTeams(generateTeams(players));
     setPhase('teams');
   }
@@ -54,8 +68,8 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
     setError('');
     try {
       const pin = generatePin();
-      const rounds = generateRoundRobin(teams);
-      const id = await createTournament({ pin, teams, rounds });
+      const rounds = generateRoundRobin(teams, gamesPerTeam);
+      const id = await createTournament({ pin, teams, rounds, format: { gamesPerTeam, playoffTeams } });
       go('tournament', { tournamentId: id, pin });
     } catch (err) {
       if (err.message === 'ACTIVE_EXISTS') {
@@ -189,6 +203,14 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
             ))}
           </div>
 
+          <FormatPicker
+            teamCount={teams.length}
+            gamesPerTeam={gamesPerTeam}
+            setGamesPerTeam={setGamesPerTeam}
+            playoffTeams={playoffTeams}
+            setPlayoffTeams={setPlayoffTeams}
+          />
+
           {error && (
             <div className="border-l-4 border-l-rosso bg-rosso/5 border border-rosso/20 rounded px-4 py-3">
               <p className="font-sans text-sm text-rosso">{error}</p>
@@ -215,6 +237,78 @@ export default function CreateTournament({ go, initialPlayers = [] }) {
       )}
 
       <Tricolore />
+    </div>
+  );
+}
+
+function Choice({ selected, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 min-w-0 px-1 py-2.5 rounded border-2 font-sans font-bold text-sm transition-colors ${
+        selected
+          ? 'bg-forest border-forest text-white'
+          : 'bg-cream-card border-ink/15 text-ink hover:border-forest'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function FormatPicker({ teamCount, gamesPerTeam, setGamesPerTeam, playoffTeams, setPlayoffTeams }) {
+  const gameOpts = gamesPerTeamOptions(teamCount);
+  const playoffOpts = playoffOptions(teamCount);
+  if (!gameOpts.includes(gamesPerTeam) || !playoffOpts.includes(playoffTeams)) return null;
+  const f = describeFormat(teamCount, gamesPerTeam, playoffTeams);
+
+  return (
+    <div className="flex flex-col gap-4 border-t border-ink/10 pt-5">
+      <h3 className="font-headline font-bold text-2xl text-ink">Format</h3>
+
+      <div className="flex flex-col gap-2">
+        <p className="font-sans text-xs font-bold uppercase tracking-wider text-ink-muted">
+          Round robin games per team
+        </p>
+        <div className="flex gap-1.5">
+          {gameOpts.map((g) => (
+            <Choice key={g} selected={g === gamesPerTeam} onClick={() => setGamesPerTeam(g)}>
+              {g}
+            </Choice>
+          ))}
+        </div>
+      </div>
+
+      {playoffOpts.length > 1 && (
+        <div className="flex flex-col gap-2">
+          <p className="font-sans text-xs font-bold uppercase tracking-wider text-ink-muted">
+            Who makes the playoffs
+          </p>
+          <div className="flex gap-2">
+            {playoffOpts.map((p) => (
+              <Choice key={p} selected={p === playoffTeams} onClick={() => setPlayoffTeams(p)}>
+                {p === teamCount ? `All ${p} teams` : `Top ${p}`}
+              </Choice>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-cream-card border border-ink/10 border-l-4 border-l-forest rounded px-4 py-3 flex flex-col gap-1.5">
+        <p className="font-sans text-sm text-ink">
+          <span className="font-bold">Round robin:</span> {f.rrGames} games over {f.rrRounds} rounds.
+          Every team plays {gamesPerTeam}.
+        </p>
+        <p className="font-sans text-sm text-ink">
+          <span className="font-bold">Playoffs:</span>{' '}
+          {f.eliminated > 0 ? `Top ${playoffTeams} advance, ${f.eliminated} out. ` : 'Everyone advances. '}
+          {f.playoffStages.join(' → ')}.
+        </p>
+        <p className="font-sans text-xs text-ink-muted">
+          Ranked by wins, then point differential, then points scored.
+        </p>
+      </div>
     </div>
   );
 }

@@ -32,23 +32,34 @@ function slotName(bracket, teams, teamId, targetId, slot) {
   return teamId ? getTeamName(teams, teamId) : feederLabel(bracket, targetId, slot);
 }
 
-export default function PlayoffBracket({ bracket, teams, tournamentId }) {
+// preview: a projected bracket shown during the round robin; read-only
+export default function PlayoffBracket({ bracket, teams, tournamentId, preview = false }) {
   if (!bracket) return null;
 
   return (
     <div className="flex flex-col gap-8">
+      {preview && (
+        <div className="bg-cream-card border border-ink/10 border-l-4 border-l-gold rounded px-4 py-3">
+          <p className="font-sans text-sm text-ink">
+            <span className="font-bold">Projected bracket</span> if the round robin ended now.
+            It updates as scores come in and locks when the last round robin game is scored.
+          </p>
+        </div>
+      )}
       {bracket.rounds.map((round) => (
         <BracketRound
           key={round.name}
           round={round}
           bracket={bracket}
           teams={teams}
+          preview={preview}
           tournamentId={tournamentId}
         />
       ))}
       <ChampionshipFinal
         bracket={bracket}
         final={bracket.final}
+        preview={preview}
         teams={teams}
         tournamentId={tournamentId}
       />
@@ -56,7 +67,7 @@ export default function PlayoffBracket({ bracket, teams, tournamentId }) {
   );
 }
 
-function BracketRound({ round, bracket, teams, tournamentId }) {
+function BracketRound({ round, bracket, teams, tournamentId, preview }) {
   const allDone = round.matches.every((m) => m.completed);
   return (
     <div>
@@ -70,7 +81,7 @@ function BracketRound({ round, bracket, teams, tournamentId }) {
       </div>
       <div className="flex flex-col gap-3">
         {round.matches.map((match, i) => {
-          const canPlay = match.team1Id && match.team2Id;
+          const canPlay = !preview && match.team1Id && match.team2Id;
           return (
             <MatchCard
               key={match.id}
@@ -84,7 +95,7 @@ function BracketRound({ round, bracket, teams, tournamentId }) {
                   ? (s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)
                   : undefined
               }
-              onEdit={(s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)}
+              onEdit={preview ? undefined : (s1, s2) => submitBracketScore(tournamentId, match.id, s1, s2)}
             />
           );
         })}
@@ -93,7 +104,7 @@ function BracketRound({ round, bracket, teams, tournamentId }) {
   );
 }
 
-function ChampionshipFinal({ bracket, final, teams, tournamentId }) {
+function ChampionshipFinal({ bracket, final, teams, tournamentId, preview }) {
   const t1 = slotName(bracket, teams, final.team1Id, 'final', 1);
   const t2 = slotName(bracket, teams, final.team2Id, 'final', 2);
   const ready = final.team1Id && final.team2Id;
@@ -151,7 +162,7 @@ function ChampionshipFinal({ bracket, final, teams, tournamentId }) {
             const prevComplete = final.games
               .filter((g) => g.gameNum < game.gameNum)
               .every((g) => g.completed);
-            const canPlay = ready && !final.winnerId && prevComplete;
+            const canPlay = !preview && ready && !final.winnerId && prevComplete;
 
             const matchLike = {
               id: `final-g${game.gameNum}`,
@@ -176,7 +187,7 @@ function ChampionshipFinal({ bracket, final, teams, tournamentId }) {
                     ? (s1, s2) => submitFinalGame(tournamentId, game.gameNum, s1, s2)
                     : undefined
                 }
-                onEdit={(s1, s2) => submitFinalGame(tournamentId, game.gameNum, s1, s2)}
+                onEdit={preview ? undefined : (s1, s2) => submitFinalGame(tournamentId, game.gameNum, s1, s2)}
               />
             );
           })}

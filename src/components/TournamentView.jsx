@@ -1,14 +1,15 @@
-import { useEffect, useState, useRef } from 'react';
-import { subscribeTournament } from '../firebase/db';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { subscribeTournament, playoffSize } from '../firebase/db';
 import RoundRobin from './RoundRobin';
 import Standings from './Standings';
 import PlayoffBracket from './PlayoffBracket';
 import WinnerScreen from './WinnerScreen';
 import Tricolore from './Tricolore';
 import ManageTournament from './ManageTournament';
+import { generateBracket } from '../utils/tournamentLogic';
 
 const TABS = {
-  roundrobin: ['Matches', 'Standings'],
+  roundrobin: ['Matches', 'Standings', 'Playoffs'],
   playoffs: ['Bracket', 'Standings', 'Round Robin'],
 };
 
@@ -19,6 +20,16 @@ export default function TournamentView({ tournamentId, pin, go }) {
   const [copied, setCopied] = useState(false);
   const [showManage, setShowManage] = useState(false);
   const prevStatus = useRef(null);
+
+  // Bracket as it would be seeded right now (arenas are random, so only rebuild when standings change)
+  const standingsKey = JSON.stringify(tournament?.standings ?? null);
+  const projectedBracket = useMemo(
+    () =>
+      tournament?.status === 'roundrobin'
+        ? generateBracket(tournament.standings.slice(0, playoffSize(tournament)))
+        : null,
+    [standingsKey, tournament?.status]
+  );
 
   useEffect(() => {
     if (!tournamentId) { setError('No tournament ID.'); return; }
@@ -164,7 +175,15 @@ export default function TournamentView({ tournamentId, pin, go }) {
               <Standings
                 standings={tournament.standings}
                 teams={tournament.teams}
-                teamCount={tournament.teams.length}
+                playoffTeams={playoffSize(tournament)}
+              />
+            )}
+            {tab === 'Playoffs' && (
+              <PlayoffBracket
+                bracket={projectedBracket}
+                teams={tournament.teams}
+                tournamentId={tournament.id}
+                preview
               />
             )}
           </>
@@ -182,7 +201,7 @@ export default function TournamentView({ tournamentId, pin, go }) {
               <Standings
                 standings={tournament.standings}
                 teams={tournament.teams}
-                teamCount={tournament.teams.length}
+                playoffTeams={playoffSize(tournament)}
                 showPlayoffNote
               />
             )}

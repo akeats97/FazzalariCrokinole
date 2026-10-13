@@ -1,17 +1,20 @@
 import { getTeamName } from '../utils/tournamentLogic';
 
+// Keyed by playoff bracket size
 const PLAYOFF_NOTES = {
-  4: { byeCount: 0, note: 'All 4 teams play in the Semifinals.' },
+  4: { byeCount: 0, note: 'All 4 play in the Semifinals.' },
   5: { byeCount: 1, note: '1st place advances directly to the Semifinals. 4th vs 5th in Play-in.' },
   6: { byeCount: 2, note: '1st and 2nd place advance directly to the Final Four.' },
   7: { byeCount: 1, note: '1st place advances directly to the Semifinals.' },
   8: { byeCount: 0, note: 'All 8 teams play in the Quarterfinals.' },
 };
 
-export default function Standings({ standings, teams, teamCount, showPlayoffNote = false }) {
+export default function Standings({ standings, teams, playoffTeams, showPlayoffNote = false }) {
   if (!standings || standings.length === 0) return null;
 
-  const { byeCount = 0, note = '' } = PLAYOFF_NOTES[teamCount] ?? {};
+  const { byeCount = 0, note: bracketNote = '' } = PLAYOFF_NOTES[playoffTeams] ?? {};
+  const hasCut = playoffTeams < standings.length;
+  const note = hasCut ? `Top ${playoffTeams} make the playoffs. ${bracketNote}` : bracketNote;
 
   return (
     <div>
@@ -33,8 +36,16 @@ export default function Standings({ standings, teams, teamCount, showPlayoffNote
           const name = getTeamName(teams, row.teamId);
 
           return (
+            <div key={row.teamId}>
+            {hasCut && rank === playoffTeams + 1 && (
+              <div className="flex items-center gap-2 px-4 py-1 bg-rosso/5 border-t border-rosso/30">
+                <span className="font-sans text-[10px] font-bold uppercase tracking-widest text-rosso">
+                  Playoff cut
+                </span>
+                <div className="flex-1 h-px bg-rosso/30" />
+              </div>
+            )}
             <div
-              key={row.teamId}
               className={`grid grid-cols-[2rem_1fr_2.5rem_2.5rem_3rem] px-4 py-3 border-t border-ink/8 items-center ${
                 isFirst ? 'bg-gold/10' : i % 2 === 0 ? 'bg-cream' : 'bg-cream-card'
               }`}
@@ -61,11 +72,12 @@ export default function Standings({ standings, teams, teamCount, showPlayoffNote
                 {row.scoreDiff > 0 ? '+' : ''}{row.scoreDiff}
               </span>
             </div>
+            </div>
           );
         })}
       </div>
 
-      {showPlayoffNote && note && (
+      {(showPlayoffNote || hasCut) && note && (
         <p className="font-sans text-xs text-ink-muted mt-2">{note}</p>
       )}
     </div>

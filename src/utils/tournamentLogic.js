@@ -34,56 +34,85 @@ export function generateTeams(players) {
 
 // ── ROUND-ROBIN SCHEDULING ───────────────────────────────────────────────────
 //
-// Two arenas = exactly 2 concurrent matches per round (max).
-// Greedy scheduler: assign shuffled matchups to rounds ensuring no team
-// appears twice in the same round.
-//
-// Team counts → rounds:
-//   4 teams → 3 rounds (6 games = all C(4,2) unique pairs, each team plays 3×)
-//   5 teams → 3 rounds (6 games, ~2-3 games per team)
-//   6 teams → 3 rounds (6 games, each team plays 2×, 1 bye round)
-//   7-8 teams → 4 rounds (8 games, each team plays 2×)
+// Two arenas = at most 2 concurrent matches per round.
+// Every team plays exactly `gamesPerTeam` games with no repeat opponents.
+// Among many random valid schedules, keep the one with the fewest
+// back-to-back games (a team playing two rounds in a row).
 
-export function generateRoundRobin(teams) {
-  const MATCHES_PER_ROUND = 2;
-  const n = teams.length;
-  const numRounds = n <= 6 ? 3 : 4;
+export const MATCHES_PER_ROUND = 2;
 
-  // All possible matchups, shuffled
-  const allPairs = [];
-  for (let i = 0; i < n; i++) {
-    for (let j = i + 1; j < n; j++) {
-      allPairs.push([teams[i].id, teams[j].id]);
+// Games-per-team choices that produce a valid schedule for n teams
+export function gamesPerTeamOptions(n) {
+  const opts = [];
+  for (let g = 1; g <= n - 1; g++) if ((n * g) % 2 === 0) opts.push(g);
+  return opts;
+}
+
+// Random graph where every team has exactly g opponents (null if this attempt dead-ends)
+function randomRegularPairs(ids, g) {
+  const deg = Object.fromEntries(ids.map((id) => [id, 0]));
+  const pairs = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) pairs.push([ids[i], ids[j]]);
+  }
+  const chosen = [];
+  for (const [a, b] of shuffle(pairs)) {
+    if (deg[a] < g && deg[b] < g) {
+      chosen.push([a, b]);
+      deg[a]++;
+      deg[b]++;
     }
   }
-  const shuffledPairs = shuffle(allPairs);
+  return ids.every((id) => deg[id] === g) ? chosen : null;
+}
 
-  // Greedy assignment
+// Packs pairs into rounds of up to 2 disjoint games, preferring rested teams
+function packRounds(pairs) {
+  const remaining = shuffle(pairs);
   const rounds = [];
-  const used = [];
+  let lastPlayed = new Set();
+  let backToBack = 0;
 
-  for (const [t1, t2] of shuffledPairs) {
-    let placed = false;
-    for (let r = 0; r < rounds.length; r++) {
-      if (
-        rounds[r].length < MATCHES_PER_ROUND &&
-        !used[r].has(t1) &&
-        !used[r].has(t2)
-      ) {
-        rounds[r].push([t1, t2]);
-        used[r].add(t1);
-        used[r].add(t2);
-        placed = true;
-        break;
-      }
+  while (remaining.length) {
+    const round = [];
+    const busy = new Set();
+    for (let slot = 0; slot < MATCHES_PER_ROUND; slot++) {
+      let best = -1;
+      let bestCost = Infinity;
+      remaining.forEach(([a, b], i) => {
+        if (busy.has(a) || busy.has(b)) return;
+        const cost = (lastPlayed.has(a) ? 1 : 0) + (lastPlayed.has(b) ? 1 : 0);
+        if (cost < bestCost) { bestCost = cost; best = i; }
+      });
+      if (best === -1) break;
+      const [a, b] = remaining.splice(best, 1)[0];
+      round.push([a, b]);
+      busy.add(a);
+      busy.add(b);
+      backToBack += bestCost;
     }
-    if (!placed) {
-      rounds.push([[t1, t2]]);
-      used.push(new Set([t1, t2]));
-    }
+    rounds.push(round);
+    lastPlayed = busy;
   }
+  return { rounds, backToBack };
+}
 
-  return rounds.slice(0, numRounds).map((pairs, ri) => ({
+export function generateRoundRobin(teams, gamesPerTeam = 2) {
+  const ids = teams.map((t) => t.id);
+  let best = null;
+
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const pairs = randomRegularPairs(ids, gamesPerTeam);
+    if (!pairs) continue;
+    const packed = packRounds(pairs);
+    const minRounds = Math.ceil(pairs.length / MATCHES_PER_ROUND);
+    const score = (packed.rounds.length - minRounds) * 100 + packed.backToBack;
+    if (!best || score < best.score) best = { ...packed, score };
+    if (score === 0) break;
+  }
+  if (!best) throw new Error(`Can't schedule ${gamesPerTeam} games each for ${ids.length} teams`);
+
+  return best.rounds.map((pairs, ri) => ({
     roundNumber: ri + 1,
     matches: pairs.map((pair, mi) => ({
       id: `r${ri + 1}m${mi + 1}`,
@@ -128,8 +157,8 @@ export function computeStandings(teams, rounds) {
       }
     }
   }
-  return Object.values(stats).sort((a, b) =>
-    b.wins !== a.wins ? b.wins - a.wins : b.scoreDiff - a.scoreDiff
+  return Object.values(stats).sort(
+    (a, b) => b.wins - a.wins || b.scoreDiff - a.scoreDiff || b.pf - a.pf
   );
 }
 
@@ -272,6 +301,24 @@ export function generateBracket(standings) {
     ],
     final: makeFinal(),
   };
+}
+
+// ── FORMAT ───────────────────────────────────────────────────────────────────
+
+// Playoff sizes offered for n teams: everyone, or the top 4
+export function playoffOptions(n) {
+  return n > 4 ? [n, 4] : [n];
+}
+
+// Plain-language summary of a format, for the setup preview
+export function describeFormat(n, gamesPerTeam, playoffTeams) {
+  const rrGames = (n * gamesPerTeam) / 2;
+  const rrRounds = Math.ceil(rrGames / MATCHES_PER_ROUND);
+  const seeds = Array.from({ length: playoffTeams }, (_, i) => ({ teamId: `s${i + 1}` }));
+  const bracket = generateBracket(seeds);
+  const playoffStages = [...bracket.rounds.map((r) => r.name), 'Final (best of 3)'];
+  const playoffGames = bracket.rounds.reduce((sum, r) => sum + r.matches.length, 0);
+  return { rrGames, rrRounds, playoffStages, playoffGames, eliminated: n - playoffTeams };
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────────

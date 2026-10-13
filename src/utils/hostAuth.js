@@ -7,19 +7,26 @@ async function sha256(text) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Host mode is remembered on this device until someone taps "Lock host mode"
 export function isHostUnlocked() {
   try {
-    return sessionStorage.getItem(UNLOCK_KEY) === '1';
+    return localStorage.getItem(UNLOCK_KEY) === '1';
   } catch {
     return false;
   }
 }
 
-// Returns true and remembers the unlock for this browser session if the password matches
+export function lockHost() {
+  try {
+    localStorage.removeItem(UNLOCK_KEY);
+  } catch { /* ignore */ }
+}
+
+// Returns true and remembers the unlock on this device if the password matches
 export async function unlockHost(password) {
   if ((await sha256(password)) !== PASSWORD_HASH) return false;
   try {
-    sessionStorage.setItem(UNLOCK_KEY, '1');
+    localStorage.setItem(UNLOCK_KEY, '1');
   } catch { /* ignore */ }
   return true;
 }

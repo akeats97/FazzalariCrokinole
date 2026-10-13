@@ -10,12 +10,16 @@ A mobile-first web app for running the annual Fazzalari family Crokinole tournam
 
 - **Host** creates a tournament, enters all player names, and the app randomly pairs them into teams of 2
 - **Players** join on their own phones using a 4-digit PIN
-- Round robin phase: all teams play each other across 2 arenas, 2 matches at a time
-- Standings auto-calculate after every score entry
-- Playoffs auto-generate from standings when round robin finishes
+- Host picks the **format** at setup: round robin games per team, and whether everyone or the top 4 make the playoffs. The format is saved on the tournament doc.
+- Round robin phase: every team plays exactly the chosen number of games (no repeat opponents), across 2 arenas, 2 matches at a time
+- Standings auto-calculate after every score entry (wins, then point differential, then points scored), with a playoff cut line when not everyone advances
+- A **Playoffs** tab shows the projected bracket during the round robin; the real bracket is generated when the last round robin game is scored
 - The final is a best-of-3 series
 - Crowning the winner adds them to the **Cup History** — a permanent record in Firestore
 - Home screen always shows the reigning champions
+- **Host mode** (password-protected, remembered per device): the ⚙ Manage panel (rename players, start over, delete tournament), editing any score, and champion photos in Cup History
+- Each game records `scoredAt` / `editedAt` (ms) for later stats
+- A banner prompts everyone to refresh when a new version is deployed; a refresh reopens the same screen
 
 ---
 
@@ -57,7 +61,10 @@ src/
     config.js              # Firebase init, exports `db`
     db.js                  # All Firestore reads/writes
   utils/
-    tournamentLogic.js     # Pure functions: PIN gen, team pairing, round robin, bracket, standings
+    tournamentLogic.js     # Pure functions: PIN gen, team pairing, round robin, bracket, standings, format summary
+    hostAuth.js            # Host password check (hashed) and per-device host mode
+    compressImage.js       # Shrinks photos to fit a Firestore doc
+    useNewVersion.js       # Detects a new deploy and shows the refresh banner
   components/
     Home.jsx               # Landing page — shows reigning champs, Start/Join/History buttons
     CreateTournament.jsx   # Enter player names → random team pairing → create tournament
@@ -70,6 +77,9 @@ src/
     WinnerScreen.jsx       # Shown when a champion is crowned
     CupHistory.jsx         # All-time champions list with photos
     Tricolore.jsx          # Decorative stripe component
+    ManageTournament.jsx   # Host panel: rename players, start over, delete, lock host mode
+    PasswordPrompt.jsx     # Shared host password form
+    CupPhoto.jsx           # Champion photo display and upload for Cup History entries
 
 scripts/
   seed-history.mjs         # One-time: seeded the 4 historical Cup History entries

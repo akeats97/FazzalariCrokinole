@@ -56,7 +56,7 @@ export function subscribeCupHistory(cb) {
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 
-export async function createTournament({ pin, teams, rounds }) {
+export async function createTournament({ pin, teams, rounds, format }) {
   // Block if active tournament already exists
   const activeMeta = await getDoc(META_REF);
   if (activeMeta.exists() && activeMeta.data().tournamentId) {
@@ -86,6 +86,7 @@ export async function createTournament({ pin, teams, rounds }) {
     status: 'roundrobin',
     teams,
     rounds,
+    format,
     standings,
     bracket: null,
     winnersTeamId: null,
@@ -111,7 +112,7 @@ export async function submitRRScore(tournamentId, roundIdx, matchId, score1, sco
         : {
             ...r,
             matches: r.matches.map((m) =>
-              m.id !== matchId ? m : { ...m, score1, score2, completed: true }
+              m.id !== matchId ? m : { ...m, score1, score2, completed: true, ...stamp(m) }
             ),
           }
     );
@@ -121,7 +122,7 @@ export async function submitRRScore(tournamentId, roundIdx, matchId, score1, sco
 
     // Re-seed the bracket if a round robin score changes before any playoff game is played
     if (isRoundRobinComplete(rounds)) {
-      update.bracket = generateBracket(standings);
+      update.bracket = generateBracket(standings.slice(0, playoffSize(data)));
       update.status = 'playoffs';
     }
 
@@ -145,6 +146,7 @@ export async function submitBracketScore(tournamentId, matchId, score1, score2) 
       if (match.completed && match.winnerId !== winner && nextGameStarted(bracket, match.feedsTo)) {
         throw new Error('DOWNSTREAM_STARTED');
       }
+      Object.assign(match, stamp(match));
       match.score1 = score1;
       match.score2 = score2;
       match.completed = true;
@@ -178,6 +180,7 @@ export async function submitFinalGame(tournamentId, gameNum, score1, score2) {
 
     const game = bracket.final.games.find((g) => g.gameNum === gameNum);
     if (!game) throw new Error('Game not found');
+    Object.assign(game, stamp(game));
     game.score1 = score1;
     game.score2 = score2;
     game.completed = true;
@@ -192,6 +195,18 @@ export async function submitFinalGame(tournamentId, gameNum, score1, score2) {
 
     tx.update(ref, { bracket });
   });
+}
+
+// When a game was first scored and last edited (ms), for later stats.
+// Client clock, since serverTimestamp() can't be used inside arrays.
+function stamp(game) {
+  const now = Date.now();
+  return game.completed ? { editedAt: now } : { scoredAt: now };
+}
+
+// Older tournaments have no format: every team made the playoffs
+export function playoffSize(tournament) {
+  return tournament.format?.playoffTeams ?? tournament.teams.length;
 }
 
 function playoffsStarted(bracket) {
