@@ -12,7 +12,7 @@ export default function PasswordPrompt({ onUnlock, onCancel, message, compact = 
     const ok = await unlockHost(password);
     setChecking(false);
     if (!ok) {
-      setError('Incorrect password.');
+      setError('Incorrect PIN.');
       setPassword('');
       return;
     }
@@ -26,9 +26,11 @@ export default function PasswordPrompt({ onUnlock, onCancel, message, compact = 
       )}
       <input
         type="password"
+        inputMode="numeric"
+        autoComplete="off"
         value={password}
         onChange={(e) => { setPassword(e.target.value); setError(''); }}
-        placeholder="Password"
+        placeholder="PIN"
         autoFocus
         className={`font-sans bg-cream border-2 border-ink/15 focus:border-forest rounded outline-none transition-colors text-ink text-base ${compact ? 'px-3 py-2' : 'px-4 py-3'}`}
       />

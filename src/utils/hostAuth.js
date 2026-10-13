@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
-// SHA-256 of the admin password, so the plain text isn't shipped in the bundle
-const PASSWORD_HASH = '106a6a89e47bee59eeeb413371f5f656e0f89d4b2e233148bdbc17b4ff6329e1';
+// SHA-256 of the admin PIN, so the plain text isn't shipped in the bundle
+const PASSWORD_HASH = 'b97d4904938f12a04277ff18c386c7460877bf4002ad82a0ee3a5ab88f2b9249';
 const UNLOCK_KEY = 'manageUnlocked';
 
 const listeners = new Set();
@@ -28,9 +28,9 @@ export function lockHost() {
   notify();
 }
 
-// Returns true and remembers the sign-in on this device if the password matches
-export async function unlockHost(password) {
-  if ((await sha256(password)) !== PASSWORD_HASH) return false;
+// Returns true and remembers the sign-in on this device if the PIN matches
+export async function unlockHost(pin) {
+  if ((await sha256(pin.trim())) !== PASSWORD_HASH) return false;
   try {
     localStorage.setItem(UNLOCK_KEY, '1');
   } catch { /* ignore */ }
