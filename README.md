@@ -151,13 +151,7 @@ All core logic lives in `src/utils/tournamentLogic.js` — pure functions, no Fi
 Players are shuffled and paired sequentially into teams of 2. Always requires an even number of players (8–16).
 
 ### Round robin scheduler
-Greedy algorithm. Iterates all possible matchups (shuffled), assigns each to the earliest round where:
-- fewer than 2 matches are already scheduled, AND
-- neither team is already playing that round
-
-Round counts by team size:
-- 4–6 teams → 3 rounds
-- 7–8 teams → 4 rounds
+`generateRoundRobin(teams, gamesPerTeam)` picks pairings so every team plays the chosen number of games, then orders them so teams rest between games where possible. Games are stored in groups of 2 (`rounds`), but the app shows them as one list: **Up Next** (in schedule order, played on whichever board frees up) and **Done** (most recently scored first). Games are labelled Game 1, Game 2, and so on; boards are not assigned.
 
 ### Standings
 Sorted by wins, then score differential as tiebreaker.

@@ -297,7 +297,7 @@ function FormatPicker({ teamCount, gamesPerTeam, setGamesPerTeam, playoffTeams, 
 
       <div className="bg-cream-card border border-ink/10 border-l-4 border-l-forest rounded px-4 py-3 flex flex-col gap-1.5">
         <p className="font-sans text-sm text-ink">
-          <span className="font-bold">Round robin:</span> {f.rrGames} games over {f.rrRounds} rounds.
+          <span className="font-bold">Round robin:</span> {f.rrGames} games, played two at a time as boards free up.
           Every team plays {gamesPerTeam}.
         </p>
         <p className="font-sans text-sm text-ink">

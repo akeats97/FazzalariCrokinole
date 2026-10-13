@@ -37,6 +37,7 @@ export default function MatchCard({
   onEdit,
   allowTie = true,
   label,
+  showArena = true,
 }) {
   const [s1, setS1] = useState('');
   const [s2, setS2] = useState('');
@@ -52,7 +53,7 @@ export default function MatchCard({
   }, [match.score1, match.score2, match.completed]);
 
   const shown = saved ? { ...match, ...saved, completed: true } : match;
-  const arena = ARENA_CONFIG[match.arena] ?? DEFAULT_ARENA;
+  const arena = (showArena && ARENA_CONFIG[match.arena]) || DEFAULT_ARENA;
   const isTBD = !onSubmit && !shown.completed;
   const isCompleted = shown.completed && !editing;
   const showInputs = !isCompleted && !isTBD;
@@ -105,14 +106,18 @@ export default function MatchCard({
     <div className={`bg-cream-card border border-ink/10 rounded border-l-4 overflow-hidden ${arena.border}`}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-ink/8 bg-cream">
-        <div className="flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${arena.dot}`} />
-          <span className={`font-sans text-xs font-semibold uppercase tracking-wide border rounded-full px-2 py-0.5 ${arena.badge}`}>
-            {match.arena}
-          </span>
-        </div>
+        {showArena ? (
+          <div className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${arena.dot}`} />
+            <span className={`font-sans text-xs font-semibold uppercase tracking-wide border rounded-full px-2 py-0.5 ${arena.badge}`}>
+              {match.arena}
+            </span>
+          </div>
+        ) : (
+          <span className="font-sans text-xs font-bold uppercase tracking-wide text-ink-muted">{label}</span>
+        )}
         <div className="flex items-center gap-2">
-          {label && <span className="font-sans text-xs text-ink-faint">{label}</span>}
+          {label && showArena && <span className="font-sans text-xs text-ink-faint">{label}</span>}
           {isCompleted && <span className="font-sans text-xs text-forest font-bold">✓ Final</span>}
           {isCompleted && onEdit && admin && (
             <button

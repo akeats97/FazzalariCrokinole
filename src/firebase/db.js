@@ -32,7 +32,7 @@ export async function checkActiveTournament() {
 
 export function subscribeTournament(tournamentId, cb) {
   return onSnapshot(doc(db, 'tournaments', tournamentId), (snap) => {
-    cb(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+    cb(snap.exists() ? { ...snap.data(), id: snap.id } : null);
   });
 }
 
